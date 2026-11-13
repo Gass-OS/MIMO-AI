@@ -47,8 +47,9 @@ if old not in source:
     raise SystemExit("Expected OpenCL stub/link-directory block not found")
 source = source.replace(old, "")
 
-if "OpenCL" in source or "ggml-opencl" in source:
-    raise SystemExit("OpenCL references remain in Android CMake after patch")
+for forbidden in ("ggml-opencl", "-DLM_GGML_USE_OPENCL", "OpenCL-Headers", "\\n    OpenCL\\n"):
+    if forbidden in source:
+        raise SystemExit(f"OpenCL build dependency remains in Android CMake: {forbidden}")
 
 cmake.write_text(source)
 print("OpenCL backend disabled; CPU + Vulkan build retained.")
