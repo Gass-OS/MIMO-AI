@@ -1,6 +1,8 @@
 package ai.mimo.chat
 
 import android.content.Context
+import android.app.ActivityManager
+import android.os.Build
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.StatFs
@@ -11,7 +13,9 @@ import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
@@ -59,6 +63,57 @@ class ModelInstaller(private val context: Context) {
     private fun partFile(model: Model) = File(modelFile(model).parentFile, model.fileName + ".part")
 
     fun availableBytes(): Long = StatFs(context.filesDir.absolutePath).availableBytes
+
+    fun recommendedPerformanceProfile(): String {
+        val memory = ActivityManager.MemoryInfo()
+        (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
+        val ramGb = memory.totalMem / 1_073_741_824.0
+        val cores = Runtime.getRuntime().availableProcessors()
+        return when { ramGb >= 10.0 && cores >= 8 -> "high"; ramGb < 6.0 -> "low"; else -> "medium" }
+    }
+
+    fun deviceResources(): String {
+        val memory = ActivityManager.MemoryInfo()
+        (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
+        val ramGb = memory.totalMem / 1_073_741_824.0
+        val freeGb = availableBytes() / 1_000_000_000.0
+        val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: Build.CPU_ABI
+        val cores = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+        val tier = when {
+            ramGb >= 10.0 && cores >= 8 -> "High-performance"
+            ramGb >= 6.0 -> "Balanced"
+            else -> "Memory-saving"
+        }
+        return String.format(Locale.US, "%s device | %.1f GB RAM | %d CPU cores | %s | %.2f GB free app storage", tier, ramGb, cores, abi, freeGb)
+    }
+
+    private fun networkStatus(wifiOnly: Boolean): Pair<Boolean, String> {
+        val networks = connectivity.allNetworks.toList()
+        val activeCaps = connectivity.activeNetwork?.let { connectivity.getNetworkCapabilities(it) }
+        val caps = networks.mapNotNull { connectivity.getNetworkCapabilities(it) } + listOfNotNull(activeCaps)
+        val hasInternet = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) }
+        val hasWifi = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) }
+        val hasCellular = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
+        // Respect the explicit Wi-Fi-only preference when Android positively identifies
+        // a cellular route. Do not reject a connection merely because Android's
+        // capability snapshot is incomplete (VPNs, captive portals and OEM network
+        // reporting can temporarily hide INTERNET/VALIDATED). Let the HTTPS request
+        // be the final connectivity test so MIMO never waits forever at 0%.
+        if (wifiOnly && !hasWifi && hasCellular) {
+            return false to "Wi-Fi only is ON | mobile data detected but blocked. Turn Wi-Fi only OFF to use mobile data."
+        }
+        val transport = when {
+            hasWifi -> "Wi-Fi"
+            hasCellular -> "Mobile data"
+            else -> "Network"
+        }
+        val validated = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) }
+        return true to when {
+            !hasInternet -> "Android network status is incomplete | testing the secure model connection directly..."
+            !validated -> "$transport detected | testing the secure model connection directly..."
+            else -> "$transport connected | contacting the model server..."
+        }
+    }
 
     // The first model needs about 2.5 GB plus temporary/metadata headroom.
     // The larger Studio model is checked separately immediately before it starts.
@@ -115,35 +170,28 @@ class ModelInstaller(private val context: Context) {
             withContext(Dispatchers.IO) {
                 var lastReported = 0L
                 while (true) {
-                    val network = connectivity.activeNetwork
-                    val capabilities = network?.let { connectivity.getNetworkCapabilities(it) }
-                    val connected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-                    // Android may expose a VPN as the active network while Wi-Fi
-                    // remains a separate underlying network. Check all networks so
-                    // Wi-Fi-only mode does not get stuck behind a VPN transport.
-                    val wifi = connectivity.allNetworks.any { candidate ->
-                        connectivity.getNetworkCapabilities(candidate)?.let {
-                            it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                                it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                        } == true
-                    }
-                    if (!connected || (wifiOnly && !wifi)) {
-                        val reason = if (!connected) 2 else 1
+                    val (connected, networkMessage) = networkStatus(wifiOnly)
+                    if (!connected) {
+                        val reason = if (networkMessage.contains("Wi-Fi only")) 1 else 2
                         val waiting = Transfer(id, DownloadManager.STATUS_PAUSED, partial.length(), -1L, reason)
-                        publish(waiting)
+                        publish(waiting, networkMessage)
                         withContext(Dispatchers.Main) { onProgress(waiting) }
                         delay(2500)
                         continue
                     }
+                    val connecting = Transfer(id, DownloadManager.STATUS_RUNNING, partial.length(), -1L, 0)
+                    publish(connecting, networkMessage)
+                    withContext(Dispatchers.Main) { onProgress(connecting) }
 
                     val offset = partial.takeIf { it.exists() }?.length() ?: 0L
                     val connection = (URL(model.url).openConnection() as HttpURLConnection).apply {
                         instanceFollowRedirects = true
-                        connectTimeout = 30_000
-                        readTimeout = 60_000
+                        connectTimeout = 45_000
+                        readTimeout = 120_000
                         requestMethod = "GET"
                         setRequestProperty("User-Agent", "MIMO-AI-Android/0.1")
                         setRequestProperty("Accept-Encoding", "identity")
+                        setRequestProperty("Accept", "application/octet-stream")
                         if (offset > 0L) setRequestProperty("Range", "bytes=$offset-")
                     }
 
@@ -179,7 +227,7 @@ class ModelInstaller(private val context: Context) {
                                     if (count < 0) break
                                     output.write(buffer, 0, count)
                                     downloaded += count
-                                    if (downloaded - lastReported >= 1024 * 1024 || count == 0) {
+                                    if (downloaded != lastReported) {
                                         lastReported = downloaded
                                         val progress = Transfer(id, DownloadManager.STATUS_RUNNING, downloaded, total, 0)
                                         publish(progress)
@@ -219,10 +267,11 @@ class ModelInstaller(private val context: Context) {
                 false
             }
         } catch (error: Exception) {
+            if (error is CancellationException) throw error
             val message = error.message ?: error.javaClass.simpleName
             val failed = Transfer(id, DownloadManager.STATUS_FAILED, partial.length(), -1L, 3)
             publish(failed, message)
-            onProgress(failed)
+            withContext(Dispatchers.Main) { onProgress(failed) }
             false
         }
     }
@@ -261,7 +310,7 @@ class ModelInstaller(private val context: Context) {
     fun resetTransferForNetworkChange(model: Model) {
         if (isVerified(model)) return
         val id = transferId(model)
-        partFile(model).takeIf { it.exists() }?.delete()
+        // Preserve partial bytes when the user changes network policy.
         prefs.edit().remove("download_${model.name}").putBoolean("verified_${model.name}", false).apply()
         synchronized(transferLock) { transfers.remove(id); errors.remove(id) }
     }
