@@ -324,7 +324,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     if (!brainVerified) {
-                        installerStatus = "MIMO Brain download failed. Check your connection and try again."
+                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.BRAIN))
+                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
+                            "MIMO Brain download failed: ${installer.describeReason(failed)} (Android code ${failed.reason})."
+                        } else "MIMO Brain download failed. Check the connection and retry."
                         return@LaunchedEffect
                     }
                 }
@@ -347,7 +350,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     if (!studioVerified) {
-                        installerStatus = "MIMO Studio download failed. MIMO Brain remains safely verified; retry to continue."
+                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.STUDIO))
+                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
+                            "MIMO Studio download failed: ${installer.describeReason(failed)} (Android code ${failed.reason}). Brain remains verified."
+                        } else "MIMO Studio download failed. MIMO Brain remains verified; retry to continue."
                         return@LaunchedEffect
                     }
                 }
@@ -545,10 +551,10 @@ private fun WelcomeScreen(theme: MimoTheme, onStart: () -> Unit) {
         "Internet access is needed for the one-time model download. Notifications are optional. Photos, microphone, camera and location are requested only if you choose a feature that needs them."
     )
     val icons = listOf(
-        Icons.Outlined.WavingHand,
+        Icons.Outlined.Forum,
         Icons.Outlined.AutoAwesome,
-        Icons.Outlined.Security,
-        Icons.Outlined.Tune
+        Icons.Outlined.Lock,
+        Icons.Outlined.Settings
     )
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 26.dp),
