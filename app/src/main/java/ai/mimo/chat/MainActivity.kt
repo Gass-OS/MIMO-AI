@@ -88,7 +88,7 @@ private object MimoArabic {
         "Model Manager" to "إدارة الملفات", "Manage setup and offline model files" to "إدارة الإعداد والملفات اللازمة للعمل دون إنترنت",
         "Device permissions" to "أذونات الجهاز", "About MIMO AI" to "حول ميمو AI", "My Projects" to "مشاريعي",
         "Prepare MIMO for offline use" to "جهّز ميمو للعمل دون إنترنت", "Not installed" to "غير مثبّت",
-        "Waiting for a verified download source" to "في انتظار مصدر تنزيل موثوق", "MIMO Brain" to "عقل ميمو",
+        "Ready to download inside MIMO" to "في انتظار مصدر تنزيل موثوق", "MIMO Brain" to "عقل ميمو",
         "MIMO Studio" to "استوديو ميمو", "READY" to "جاهز", "QUEUED" to "في الانتظار",
         "SETUP PROGRESS" to "تقدّم الإعداد", "FIRST SETUP · ABOUT 10 GB TOTAL" to "الإعداد الأول · حوالي 10 جيجابايت",
         "Continue to preview" to "المتابعة إلى المعاينة", "INITIALIZING YOUR PRIVATE AI" to "جارٍ تجهيز مساعدك الذكي الخاص",
@@ -97,7 +97,7 @@ private object MimoArabic {
         "MIMO's creative studio — turns your text descriptions and ideas into original pictures." to "استوديو ميمو الإبداعي — يحوّل وصفك وأفكارك المكتوبة إلى صور أصلية.",
         "Chat engine verified" to "تم التحقق من محرك المحادثة", "Starts after MIMO Brain is ready" to "يبدأ بعد جاهزية عقل ميمو",
         "Actual verified progress" to "التقدّم الفعلي بعد التحقق", "Chat available · Studio continues" to "المحادثة متاحة · ويستمر الاستوديو",
-        "This screen is ready for live installer progress. Downloads and engine verification are not connected in this build yet." to "هذه الشاشة جاهزة لعرض تقدّم التنزيل الفعلي. خدمة التنزيل والتحقق من المحركات غير مفعّلة في هذا الإصدار التجريبي بعد.",
+        "MIMO downloads directly inside the app. Model files are verified before setup is marked complete." to "هذه الشاشة جاهزة لعرض تقدّم التنزيل الفعلي. خدمة التنزيل والتحقق من المحركات غير مفعّلة في هذا الإصدار التجريبي بعد.",
         "Your assistant is getting ready." to "مساعدك يستعدّ للعمل.",
         "Android speech engine is not ready. Check Text-to-speech settings." to "محرك النطق في أندرويد غير جاهز. تحقّق من إعدادات تحويل النص إلى كلام.",
         "Reference image selected" to "تم اختيار الصورة المرجعية",
@@ -152,8 +152,8 @@ private object MimoArabic {
         "Thanks for your message! I'm still being connected to my on-device AI engine. This preview can show the interface, but real AI replies aren't available yet." to "شكراً على رسالتك! ما زلنا نربط محرك الذكاء الاصطناعي على الجهاز. هذه معاينة للواجهة، والردود الذكية الفعلية غير متاحة بعد.",
         "I'm getting my creative tools ready. Image creation isn't available in this preview yet." to "أجهّز أدواتي الإبداعية. إنشاء الصور غير متاح في هذه المعاينة بعد.",
         "Large downloads require your approval. Wi-Fi only is enabled by default." to "التنزيلات كبيرة وتتطلب موافقتك. التنزيل عبر Wi‑Fi فقط مفعّل افتراضياً.",
-        "At least 15 GB of free storage is required before starting these downloads." to "يلزم توفير 15 جيجابايت على الأقل قبل بدء التنزيل.",
-        "At least 15 GB of free storage is required. Free up space and try again." to "يلزم توفير 15 جيجابايت على الأقل. أفرغ بعض المساحة ثم أعد المحاولة.",
+        "At least 3 GB of free internal app storage is required before starting MIMO Brain." to "يلزم توفير 15 جيجابايت على الأقل قبل بدء التنزيل.",
+        "At least 3 GB of free internal app storage is required. Free up space and try again." to "يلزم توفير 15 جيجابايت على الأقل. أفرغ بعض المساحة ثم أعد المحاولة.",
         "Downloading MIMO Brain…" to "جارٍ تنزيل عقل ميمو…",
         "MIMO Brain · " to "عقل ميمو · ",
         "MIMO Brain download failed. Check your connection and try again." to "فشل تنزيل عقل ميمو. تحقّق من الاتصال ثم أعد المحاولة.",
@@ -171,7 +171,7 @@ private object MimoArabic {
         "Model file verified · image runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك الصور ما زال مطلوباً",
         "Starts after MIMO Brain is verified" to "يبدأ بعد التحقق من عقل ميمو",
         "Resume / retry downloads" to "استئناف / إعادة التنزيل", "Start downloads · about 9.5 GB" to "بدء التنزيل · حوالي 9.5 جيجابايت",
-        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل.",
+        "Downloads run inside MIMO into private internal app storage, resume partial transfers when you retry, and are SHA-256 verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل.",
         "Welcome to MIMO AI" to "مرحباً بك في ميمو AI",
         "One assistant. Two creative tools." to "مساعد واحد وأداتان للإبداع",
         "Your privacy matters" to "خصوصيتك تهمّنا",
@@ -188,7 +188,7 @@ private object MimoArabic {
         "The first setup downloads about 9.5 GB in total:" to "يتطلب الإعداد الأول تنزيل حوالي 9.5 جيجابايت:",
         "• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB" to "• عقل ميمو · Qwen3 4B Q4_K_M · حوالي 2.5 جيجابايت",
         "• MIMO Studio · SDXL 1.0 · about 6.94 GB" to "• استوديو ميمو · SDXL 1.0 · حوالي 6.94 جيجابايت",
-        "Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup." to "سيتم تنزيل الملفات بالتتابع والتحقق منها باستخدام SHA-256 قبل اعتمادها. يرجى توفير 15 جيجابايت على الأقل.",
+        "Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 3 GB free for Brain; MIMO Studio checks its larger storage requirement before downloading." to "سيتم تنزيل الملفات بالتتابع والتحقق منها باستخدام SHA-256 قبل اعتمادها. يرجى توفير 15 جيجابايت على الأقل.",
         "Wi-Fi only is ON. Downloads will wait for Wi-Fi." to "التنزيل عبر Wi‑Fi فقط مفعّل. سينتظر التنزيل توفر شبكة Wi‑Fi.",
         "Mobile data is allowed. Your carrier may charge data fees." to "بيانات الهاتف مسموحة. قد تُحتسب رسوم من شركة الاتصالات.",
         "I approve downloading these large model files to this device." to "أوافق على تنزيل ملفات النماذج الكبيرة إلى هذا الجهاز.",
@@ -263,6 +263,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
     var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
+    var showLanguagePicker by remember { mutableStateOf(!prefs.getBoolean("language_selected", false)) }
     var language by remember { mutableStateOf(prefs.getString("language", "ar-TN") ?: "ar-TN") }
     var page by remember { mutableStateOf("setup") }
     var locationGranted by remember {
@@ -284,6 +285,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var showExitDialog by remember { mutableStateOf(false) }
     var brainProgress by remember { mutableFloatStateOf(0f) }
     var studioProgress by remember { mutableFloatStateOf(0f) }
+    var brainDownloadedBytes by remember { mutableLongStateOf(0L) }
+    var brainTotalBytes by remember { mutableLongStateOf(-1L) }
+    var studioDownloadedBytes by remember { mutableLongStateOf(0L) }
+    var studioTotalBytes by remember { mutableLongStateOf(-1L) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
     var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
@@ -325,16 +330,18 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         if (downloadStarted) {
             try {
                 if (!installer.hasRequiredSpace()) {
-                    installerStatus = "At least 15 GB of free storage is required before starting these downloads."
+                    installerStatus = "At least 3 GB of free internal app storage is required before starting MIMO Brain."
                     return@LaunchedEffect
                 }
                 if (!brainVerified) {
                     installerStatus = "Downloading MIMO Brain…"
                     brainVerified = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
                         if (transfer != null) {
+                            brainDownloadedBytes = transfer.downloadedBytes
+                            brainTotalBytes = transfer.totalBytes
                             if (transfer.totalBytes > 0L) {
                                 brainProgress = transfer.progress
-                                installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded"
+                                installerStatus = "MIMO Brain · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
                             } else {
                                 installerStatus = when (transfer.status) {
                                     android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
@@ -358,9 +365,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     installerStatus = "MIMO Brain file verified. Downloading MIMO Studio…"
                     studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
                         if (transfer != null) {
+                            studioDownloadedBytes = transfer.downloadedBytes
+                            studioTotalBytes = transfer.totalBytes
                             if (transfer.totalBytes > 0L) {
                                 studioProgress = transfer.progress
-                                installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded"
+                                installerStatus = "MIMO Studio · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
                             } else {
                                 installerStatus = when (transfer.status) {
                                     android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
@@ -387,7 +396,15 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         }
     }
 
-    BackHandler(enabled = true) { showExitDialog = true }
+    BackHandler(enabled = true) {
+        when {
+            showExitDialog -> showExitDialog = false
+            page == "chat" -> page = "setup"
+            page != "setup" -> page = "chat"
+            showWelcome || showLanguagePicker -> showExitDialog = true
+            else -> showExitDialog = true
+        }
+    }
     CompositionLocalProvider(
         LocalMimoArabic provides language.startsWith("ar"),
         LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -417,7 +434,18 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     containerColor = theme.surface
                 )
             }
-            if (showWelcome) {
+            if (showLanguagePicker) {
+                FirstRunLanguageScreen(theme = theme, selected = language, onSelect = { selectedLanguage ->
+                    language = selectedLanguage
+                    prefs.edit().putString("language", selectedLanguage).putBoolean("language_selected", true).apply()
+                    tts.language = when (selectedLanguage) {
+                        "ar-TN" -> Locale("ar", "TN")
+                        "fr" -> Locale.FRENCH
+                        else -> Locale.ENGLISH
+                    }
+                    showLanguagePicker = false
+                })
+            } else if (showWelcome) {
                 WelcomeScreen(theme, onStart = {
                     prefs.edit().putBoolean("welcome_seen", true).apply()
                     showWelcome = false
@@ -455,6 +483,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     theme = theme,
                     brainProgress = brainProgress,
                     studioProgress = studioProgress,
+                    brainDownloadedBytes = brainDownloadedBytes,
+                    brainTotalBytes = brainTotalBytes,
+                    studioDownloadedBytes = studioDownloadedBytes,
+                    studioTotalBytes = studioTotalBytes,
                     brainReady = brainVerified,
                     studioReady = studioVerified,
                     downloadStarted = downloadStarted,
@@ -484,7 +516,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     },
                     onStartDownloads = {
                         if (!installer.hasRequiredSpace()) {
-                            installerStatus = "At least 15 GB of free storage is required. Free up space and try again."
+                            installerStatus = "At least 3 GB of free internal app storage is required. Free up space and try again."
                         } else {
                             prefs.edit().putBoolean("model_download_started", true).apply()
                             downloadStarted = true
@@ -508,7 +540,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                     catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
                 })
-                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak)
+                else -> ChatScreen(theme, prefs = prefs, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak, downloadStarted = downloadStarted, brainProgress = brainProgress, studioProgress = studioProgress, brainDownloadedBytes = brainDownloadedBytes, brainTotalBytes = brainTotalBytes, studioDownloadedBytes = studioDownloadedBytes, studioTotalBytes = studioTotalBytes, brainVerified = brainVerified, studioVerified = studioVerified, downloadStatus = installerStatus)
             }
         }
     }
@@ -554,6 +586,50 @@ private fun BrandMark(theme: MimoTheme, size: Int = 54) {
                 cap = androidx.compose.ui.graphics.StrokeCap.Round)
         }
     }
+}
+
+@Composable
+private fun FirstRunLanguageScreen(theme: MimoTheme, selected: String, onSelect: (String) -> Unit) {
+    Column(Modifier.fillMaxSize().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center) {
+        BrandMark(theme, 82)
+        Spacer(Modifier.height(20.dp))
+        Text("MIMO AI", color = theme.accent, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+        Spacer(Modifier.height(10.dp))
+        Text("Choose your language", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text("اختر لغتك  ·  Choisissez votre langue", color = theme.secondary, fontSize = 14.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(26.dp))
+        data class LanguageChoice(val name: String, val code: String, val tag: String, val subtitle: String)
+        listOf(
+            LanguageChoice("العربية · تونس", "ar-TN", "RTL", "واجهة عربية كاملة واتجاه من اليمين إلى اليسار"),
+            LanguageChoice("Français", "fr", "FR", "Interface en français · navigation et conseils"),
+            LanguageChoice("English", "en", "EN", "Full English interface · navigation and setup tips")
+        ).forEach { item ->
+            val active = selected == item.code
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(16.dp))
+                .background(theme.surface).border(if (active) 2.dp else 1.dp,
+                    if (active) theme.accent else Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                .clickable { onSelect(item.code) }.padding(horizontal = 18.dp, vertical = 15.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(item.name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(item.subtitle, color = theme.secondary, fontSize = 10.sp, lineHeight = 14.sp)
+                }
+                Text(item.tag, color = theme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                if (active) { Spacer(Modifier.width(8.dp)); Icon(Icons.Outlined.CheckCircle, null, tint = theme.accent) }
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("You can change this later in Settings.", color = theme.secondary, fontSize = 11.sp, textAlign = TextAlign.Center)
+    }
+}
+
+private fun formatModelBytes(bytes: Long): String {
+    if (bytes < 0L) return "Unknown"
+    val gb = bytes / 1_000_000_000.0
+    return if (gb >= 1.0) String.format(Locale.US, "%.2f GB", gb)
+    else String.format(Locale.US, "%.0f MB", bytes / 1_000_000.0)
 }
 
 @Composable
@@ -654,9 +730,92 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (String) -> Unit, speechEnabled: Boolean, autoSpeak: Boolean) {
-    val messages = remember { mutableStateListOf<ChatMessage>() }
+private fun ChatScreen(
+    theme: MimoTheme,
+    prefs: android.content.SharedPreferences,
+    onSettings: () -> Unit,
+    onSpeak: (String) -> Unit,
+    speechEnabled: Boolean,
+    autoSpeak: Boolean,
+    downloadStarted: Boolean,
+    brainProgress: Float,
+    studioProgress: Float,
+    brainDownloadedBytes: Long,
+    brainTotalBytes: Long,
+    studioDownloadedBytes: Long,
+    studioTotalBytes: Long,
+    brainVerified: Boolean,
+    studioVerified: Boolean,
+    downloadStatus: String
+) {
+    val messages = remember {
+        mutableStateListOf<ChatMessage>().apply {
+            val saved = prefs.getString("active_chat_messages", null)
+            if (!saved.isNullOrBlank()) {
+                try {
+                    val array = org.json.JSONArray(saved)
+                    for (index in 0 until array.length()) {
+                        val item = array.getJSONObject(index)
+                        add(ChatMessage(item.optString("text"), item.optBoolean("fromUser")))
+                    }
+                } catch (_: Exception) { clear() }
+            }
+        }
+    }
+    SideEffect {
+        val array = org.json.JSONArray()
+        messages.forEach { message ->
+            array.put(org.json.JSONObject().put("text", message.text).put("fromUser", message.fromUser))
+        }
+        prefs.edit().putString("active_chat_messages", array.toString()).apply()
+    }
     var input by remember { mutableStateOf("") }
+    var historyOpen by remember { mutableStateOf(false) }
+    var savedChats by remember {
+        mutableStateOf(
+            try { org.json.JSONArray(prefs.getString("saved_chat_library", "[]")) }
+            catch (_: Exception) { org.json.JSONArray() }
+        )
+    }
+    fun encodeMessages(source: List<ChatMessage>): org.json.JSONArray {
+        val array = org.json.JSONArray()
+        source.forEach { array.put(org.json.JSONObject().put("text", it.text).put("fromUser", it.fromUser)) }
+        return array
+    }
+    fun archiveCurrentChat() {
+        if (messages.isEmpty()) return
+        val firstUserText = messages.firstOrNull { it.fromUser }?.text ?: "New conversation"
+        val title = firstUserText.take(42).ifBlank { "New conversation" }
+        val archive = org.json.JSONObject()
+            .put("id", System.currentTimeMillis().toString())
+            .put("title", title)
+            .put("savedAt", System.currentTimeMillis())
+            .put("messages", encodeMessages(messages))
+        val updated = org.json.JSONArray().put(archive)
+        for (i in 0 until savedChats.length()) updated.put(savedChats.getJSONObject(i))
+        while (updated.length() > 50) updated.remove(updated.length() - 1)
+        savedChats = updated
+        prefs.edit().putString("saved_chat_library", updated.toString()).putString("active_chat_messages", "[]").apply()
+    }
+    fun loadSavedChat(index: Int) {
+        val chosen = savedChats.optJSONObject(index) ?: return
+        val chosenId = chosen.optString("id")
+        val chosenMessages = chosen.optJSONArray("messages") ?: org.json.JSONArray()
+        archiveCurrentChat()
+        messages.clear()
+        for (i in 0 until chosenMessages.length()) {
+            val item = chosenMessages.optJSONObject(i) ?: continue
+            messages.add(ChatMessage(item.optString("text"), item.optBoolean("fromUser")))
+        }
+        val updated = org.json.JSONArray()
+        for (i in 0 until savedChats.length()) {
+            val item = savedChats.optJSONObject(i) ?: continue
+            if (item.optString("id") != chosenId) updated.put(item)
+        }
+        savedChats = updated
+        prefs.edit().putString("saved_chat_library", updated.toString()).apply()
+        historyOpen = false
+    }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             BrandMark(theme, 42)
@@ -665,7 +824,71 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 Text("MIMO AI", fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = theme.accent)
                 Text("Your personal AI space", fontSize = 11.sp, color = theme.secondary)
             }
+            IconButton(onClick = { historyOpen = true }) { Icon(Icons.Outlined.History, "Chat history", tint = theme.secondary) }
+            IconButton(onClick = {
+                archiveCurrentChat()
+                messages.clear()
+                prefs.edit().putString("active_chat_messages", "[]").apply()
+            }) { Icon(Icons.Outlined.Add, "New chat", tint = theme.accent) }
             IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings", tint = theme.secondary) }
+        }
+        if (downloadStarted && (!brainVerified || !studioVerified)) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                color = theme.surface.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, theme.accent.copy(alpha = 0.28f))
+            ) {
+                Column(Modifier.padding(horizontal = 13.dp, vertical = 10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.CloudDownload, null, tint = theme.accent, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (!brainVerified) "MIMO Brain · chat model" else "MIMO Studio · image model", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        val activeProgress = if (!brainVerified) brainProgress else studioProgress
+                        Text("${String.format(Locale.US, "%.2f", activeProgress.coerceIn(0f, 1f) * 100f)}%", color = theme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(7.dp))
+                    val activeProgress = if (!brainVerified) brainProgress else studioProgress
+                    LinearProgressIndicator(
+                        progress = { activeProgress.coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
+                        color = theme.accent, trackColor = theme.background
+                    )
+                    val activeBytes = if (!brainVerified) brainDownloadedBytes else studioDownloadedBytes
+                    val totalBytes = if (!brainVerified) brainTotalBytes else studioTotalBytes
+                    Text(
+                        when {
+                            totalBytes > 0L -> "${formatModelBytes(activeBytes)} / ${formatModelBytes(totalBytes)} · $downloadStatus"
+                            else -> downloadStatus
+                        },
+                        color = theme.secondary, fontSize = 10.sp, lineHeight = 14.sp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    Text(if (!brainVerified) "MIMO Studio will start automatically after Brain is verified." else "Image model download continues while you chat.", color = theme.secondary, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
+                }
+            }
+        }
+        if (historyOpen) {
+            AlertDialog(
+                onDismissRequest = { historyOpen = false },
+                title = { Text("Saved conversations", color = Color.White) },
+                text = {
+                    if (savedChats.length() == 0) Text("Your saved conversations will appear here.", color = theme.secondary)
+                    else Column(Modifier.heightIn(max = 360.dp)) {
+                        for (i in 0 until savedChats.length()) {
+                            val item = savedChats.optJSONObject(i) ?: continue
+                            Text(
+                                item.optString("title", "Conversation"),
+                                Modifier.fillMaxWidth().clickable { loadSavedChat(i) }.padding(vertical = 12.dp),
+                                color = Color.White, fontSize = 14.sp
+                            )
+                            if (i < savedChats.length() - 1) HorizontalDivider(color = theme.secondary.copy(alpha = 0.18f))
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { historyOpen = false }) { Text("Close") } },
+                containerColor = theme.surface
+            )
         }
         if (messages.isEmpty()) {
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -722,7 +945,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 }
             }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
         }
-        Text("Preview interface · AI engines not connected yet", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text(if (studioVerified) "MIMO Studio model verified · image runtime integration still required" else "MIMO preview · model downloads continue in the background", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
     }
 }
 
@@ -893,7 +1116,7 @@ private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
                         }
                         Spacer(Modifier.height(14.dp))
                         LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth(), color = theme.accent, trackColor = theme.background)
-                        Text("Waiting for a verified download source", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
+                        Text("Ready to download inside MIMO", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
                     }
                 }
             }
@@ -913,7 +1136,7 @@ private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
                         }
                         Spacer(Modifier.height(14.dp))
                         LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth(), color = theme.accent, trackColor = theme.background)
-                        Text("Waiting for a verified download source", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
+                        Text("Ready to download inside MIMO", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
                     }
                 }
             }
@@ -1077,6 +1300,10 @@ private fun SetupBootScreen(
     theme: MimoTheme,
     brainProgress: Float,
     studioProgress: Float,
+    brainDownloadedBytes: Long,
+    brainTotalBytes: Long,
+    studioDownloadedBytes: Long,
+    studioTotalBytes: Long,
     brainReady: Boolean,
     studioReady: Boolean,
     downloadStarted: Boolean,
@@ -1088,12 +1315,26 @@ private fun SetupBootScreen(
     onStartDownloads: () -> Unit,
     onContinuePreview: () -> Unit
 ) {
-    val tips = listOf(
-        "Tip · You can ask MIMO to explain, translate, summarize and help you write.",
-        "Privacy · After setup, supported AI processing is designed to happen on your device.",
-        "Good to know · Keep MIMO open and connected to Wi-Fi during the first download.",
-        "Smart setup · MIMO prepares chat first, then continues the creative tools in the background."
-    )
+    val tips = when (language) {
+        "ar-TN" -> listOf(
+            "نصيحة · يمكنك طلب الشرح والترجمة والتلخيص والمساعدة في الكتابة من ميمو.",
+            "الخصوصية · بعد الإعداد، تتم معالجة مهام الذكاء الاصطناعي المدعومة على جهازك.",
+            "معلومة · أبقِ ميمو مفتوحاً ومتصلًا بالواي فاي أثناء التنزيل الأول.",
+            "إعداد ذكي · يتم تجهيز ميمو Brain أولاً، ثم تنزيل أدوات الإبداع."
+        )
+        "fr" -> listOf(
+            "Conseil · Demandez à MIMO d’expliquer, traduire, résumer ou vous aider à écrire.",
+            "Confidentialité · Après la configuration, les fonctions prises en charge sont conçues pour fonctionner sur votre appareil.",
+            "À savoir · Gardez MIMO ouvert et connecté au Wi-Fi pendant le premier téléchargement.",
+            "Configuration intelligente · MIMO prépare d’abord Brain, puis télécharge les outils créatifs."
+        )
+        else -> listOf(
+            "Tip · Ask MIMO to explain, translate, summarize and help you write.",
+            "Privacy · After setup, supported AI features are designed to run on your device.",
+            "Good to know · Keep MIMO open and connected to Wi-Fi during the first download.",
+            "Smart setup · MIMO prepares Brain first, then downloads the creative tools."
+        )
+    }
     var tipIndex by remember { mutableIntStateOf(0) }
     var languageMenuExpanded by remember { mutableStateOf(false) }
     var showDownloadConsent by remember { mutableStateOf(false) }
@@ -1106,6 +1347,10 @@ private fun SetupBootScreen(
     }
     val safeBrain = brainProgress.coerceIn(0f, 1f)
     val safeStudio = studioProgress.coerceIn(0f, 1f)
+    val waitingForBrain = downloadStarted && !brainReady && safeBrain <= 0f &&
+        !statusMessage.contains("failed", ignoreCase = true) && !statusMessage.contains("error", ignoreCase = true)
+    val waitingForStudio = downloadStarted && brainReady && !studioReady && safeStudio <= 0f &&
+        !statusMessage.contains("failed", ignoreCase = true) && !statusMessage.contains("error", ignoreCase = true)
     val blue = Color(0xFF66B7FF)
     Box(
         Modifier.fillMaxSize().background(
@@ -1168,10 +1413,10 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.Psychology, null, tint = blue, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Brain", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (brainReady) "READY" else if (downloadStarted && safeBrain <= 0f) "…" else "${(safeBrain * 100).toInt()}%", color = blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(if (brainReady) "VERIFIED" else if (waitingForBrain) "CONNECTING" else "${String.format(Locale.US, "%.2f", safeBrain * 100.0)}%", color = blue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
-                    if (!brainReady && downloadStarted && safeBrain <= 0f) {
+                    if (waitingForBrain) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
                     } else {
                         LinearProgressIndicator(
@@ -1181,7 +1426,10 @@ private fun SetupBootScreen(
                         )
                     }
                     Text(
-                        if (brainReady) "Model file verified · chat runtime integration pending" else if (downloadStarted) statusMessage else "Ready when you approve the download",
+                        if (brainReady) "Model file verified · chat runtime integration pending"
+                        else if (downloadStarted && brainTotalBytes <= 0L) "Received ${formatModelBytes(brainDownloadedBytes)} · waiting for the server response or first data"
+                        else if (downloadStarted) "${formatModelBytes(brainDownloadedBytes)} / ${formatModelBytes(brainTotalBytes)} received"
+                        else "Ready when you approve the download",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(Modifier.height(19.dp))
@@ -1194,10 +1442,10 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.AutoAwesome, null, tint = Color(0xFF8CAEFF), modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Studio", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (studioReady) "VERIFIED" else if (brainReady && downloadStarted && safeStudio <= 0f) "…" else if (brainReady) "${(safeStudio * 100).toInt()}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(if (studioReady) "VERIFIED" else if (waitingForStudio) "CONNECTING" else if (brainReady) "${String.format(Locale.US, "%.2f", safeStudio * 100.0)}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
-                    if (brainReady && !studioReady && downloadStarted && safeStudio <= 0f) {
+                    if (waitingForStudio) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape), color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40))
                     } else {
                         LinearProgressIndicator(
@@ -1208,6 +1456,8 @@ private fun SetupBootScreen(
                     }
                     Text(
                         if (studioReady) "Model file verified · image runtime integration pending"
+                        else if (brainReady && downloadStarted && studioTotalBytes <= 0L) "Received ${formatModelBytes(studioDownloadedBytes)} · waiting for the server response or first data"
+                        else if (brainReady && downloadStarted) "${formatModelBytes(studioDownloadedBytes)} / ${formatModelBytes(studioTotalBytes)} received"
                         else if (brainReady) "MIMO Studio download is next"
                         else "Starts after MIMO Brain is verified",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
@@ -1216,15 +1466,25 @@ private fun SetupBootScreen(
                     Text("SETUP PROGRESS", color = Color(0xFF8CAEFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                     val total = if (brainReady) (0.65f + safeStudio * 0.35f) else safeBrain * 0.65f
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${(total * 100).toInt()}%", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(
+                            if (waitingForBrain) "CONNECTING…"
+                            else "${String.format(Locale.US, "%.2f", total * 100.0)}%",
+                            color = Color.White, fontSize = if (waitingForBrain) 15.sp else 25.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                         Spacer(Modifier.weight(1f))
-                        Text(if (brainReady && safeStudio < 1f) "Chat available · Studio continues" else "Actual verified progress", color = Color(0xFF9FB5CE), fontSize = 10.sp)
+                        Text(
+                            if (waitingForBrain) "Waiting for first bytes"
+                            else if (brainReady && safeStudio < 1f) "Chat file verified · Studio continues"
+                            else "Actual verified progress",
+                            color = Color(0xFF9FB5CE), fontSize = 10.sp
+                        )
                     }
-                    LinearProgressIndicator(
-                        progress = { total.coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape),
-                        color = blue, trackColor = Color(0xFF1A2B40)
-                    )
+                    if (waitingForBrain) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
+                    } else {
+                        LinearProgressIndicator(progress = { total.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
+                    }
                 }
             }
             Spacer(Modifier.height(18.dp))
@@ -1267,7 +1527,7 @@ private fun SetupBootScreen(
             ) {
                 Text(if (downloadStarted) "Resume / retry downloads" else "Review & download · about 9.5 GB", fontWeight = FontWeight.Bold)
             }
-            Text("Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
+            Text("Downloads run inside MIMO into private internal app storage, resume partial transfers when you retry, and are SHA-256 verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
                 color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 7.dp))
             OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
@@ -1285,7 +1545,7 @@ private fun SetupBootScreen(
                         Text("• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
                         Text("• MIMO Studio · SDXL 1.0 · about 6.94 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
                         Spacer(Modifier.height(12.dp))
-                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
+                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 3 GB free for Brain; MIMO Studio checks its larger storage requirement before downloading.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
                         Spacer(Modifier.height(6.dp))
                         Text(if (wifiOnly) "Wi-Fi only is ON. Downloads will wait for Wi-Fi." else "Mobile data is allowed. Your carrier may charge data fees.", color = Color(0xFFB9CDE4), fontSize = 11.sp)
                         Spacer(Modifier.height(10.dp))
