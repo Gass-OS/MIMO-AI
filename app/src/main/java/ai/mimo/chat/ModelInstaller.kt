@@ -22,13 +22,13 @@ class ModelInstaller(private val context: Context) {
         BRAIN(
             "MIMO Brain",
             "Qwen3-4B-Q4_K_M.gguf",
-            "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf",
+            "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf",
             "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
         ),
         STUDIO(
             "MIMO Studio",
             "sd_xl_base_1.0.safetensors",
-            "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors",
+            "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/fa787a693dcc986199df6f759d0039f36d777169/sd_xl_base_1.0.safetensors",
             "31e35c80fc4829d14f90153f4c74cd59c90b779f6afe05a74cd6120b893f7e5b"
         )
     }
