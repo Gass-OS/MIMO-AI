@@ -274,12 +274,12 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         mutableStateOf(Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
     }
     var selectedPhoto by remember { mutableStateOf(prefs.getString("reference_photo_uri", null)) }
+    val installer = remember(context) { ModelInstaller(context) }
     var wifiOnly by remember { mutableStateOf(prefs.getBoolean("wifi_only", true)) }
-    var performanceId by remember { mutableStateOf(prefs.getString("performance_profile", "medium") ?: "medium") }
+    var performanceId by remember { mutableStateOf(prefs.getString("performance_profile", installer.recommendedPerformanceProfile()) ?: installer.recommendedPerformanceProfile()) }
     var speechEnabled by remember { mutableStateOf(prefs.getBoolean("speech_enabled", true)) }
     var autoSpeak by remember { mutableStateOf(prefs.getBoolean("auto_speak", false)) }
     var speechRate by remember { mutableFloatStateOf(prefs.getFloat("speech_rate", 1.0f)) }
-    val installer = remember(context) { ModelInstaller(context) }
     var downloadStarted by remember { mutableStateOf(prefs.getBoolean("model_download_started", false)) }
     var downloadAttempt by remember { mutableIntStateOf(0) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -291,7 +291,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var studioTotalBytes by remember { mutableLongStateOf(-1L) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
-    var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
+    var installerStatus by remember { mutableStateOf(installer.deviceResources() + " | Wi-Fi-only downloads are enabled") }
     var speechReady by remember { mutableStateOf(false) }
     val tts = remember(context) {
         TextToSpeech(context) { status -> speechReady = status == TextToSpeech.SUCCESS }
