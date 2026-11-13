@@ -329,58 +329,60 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
 
     LaunchedEffect(downloadStarted, downloadAttempt) {
         if (downloadStarted) {
-            try {
-                if (!installer.hasRequiredSpace()) {
-                    installerStatus = "At least 3 GB of free internal app storage is required before starting MIMO Brain."
-                    return@LaunchedEffect
-                }
-                if (!brainVerified) {
-                    installerStatus = "Downloading MIMO Brain…"
-                    brainVerified = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
-                        if (transfer != null) {
-                            brainDownloadedBytes = transfer.downloadedBytes
-                            brainTotalBytes = transfer.totalBytes
-                            if (transfer.totalBytes > 0L) {
-                                brainProgress = transfer.progress
-                                installerStatus = "MIMO Brain · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
-                            } else {
-                                installerStatus = when (transfer.status) {
-                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
-                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
-                                    android.app.DownloadManager.STATUS_RUNNING -> "MIMO Brain · Connected; preparing download…"
-                                    else -> "MIMO Brain · Checking download…"
-                                }
-                            }
-                        }
-                    }
-                    if (!brainVerified) {
-                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.BRAIN))
-                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
-                            "MIMO Brain download failed: ${installer.describeReason(failed)} (Android code ${failed.reason})."
-                        } else "MIMO Brain download failed. Check the connection and retry."
-                        return@LaunchedEffect
-                    }
-                }
-                brainProgress = 1f
-                installerStatus = "MIMO Brain downloaded, SHA-256 verified, and saved in MIMO's private app storage. MIMO Studio is optional and will not block Brain setup."
-
-            } catch (error: Exception) {
-                installerStatus = "Download setup error: ${error.message ?: "unknown error"}"
-            }
+            val intent = Intent(context, MimoDownloadService::class.java)
+                .setAction(MimoDownloadService.ACTION_START)
+                .putExtra(MimoDownloadService.EXTRA_WIFI_ONLY, wifiOnly)
+            context.startForegroundService(intent)
         }
     }
 
-    BackHandler(enabled = true) { showExitDialog = true }
+    LaunchedEffect(Unit) {
+        val state = context.getSharedPreferences(MimoDownloadService.STATE_PREFS, Context.MODE_PRIVATE)
+        while (true) {
+            brainVerified = installer.isVerified(ModelInstaller.Model.BRAIN)
+            brainDownloadedBytes = state.getLong("brain_downloaded", 0L)
+            brainTotalBytes = state.getLong("brain_total", -1L)
+            brainProgress = if (brainTotalBytes > 0L) (brainDownloadedBytes.toFloat() / brainTotalBytes).coerceIn(0f, 1f) else 0f
+            installerStatus = state.getString("status", installerStatus) ?: installerStatus
+            if (brainVerified) brainProgress = 1f
+            kotlinx.coroutines.delay(900)
+        }
+    }
+
+    BackHandler(enabled = true) {
+        when (page) {
+            "settings", "setup" -> { page = "chat"; showExitDialog = false }
+            "models", "permissions", "about", "projects" -> { page = "settings"; showExitDialog = false }
+            else -> showExitDialog = true
+        }
+    }
     CompositionLocalProvider(
         LocalMimoArabic provides language.startsWith("ar"),
         LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
     ) {
-    MaterialTheme(colorScheme = darkColorScheme(
-        background = theme.background, surface = theme.surface,
-        primary = theme.accent, onPrimary = Color(0xFF080B10),
-        onBackground = Color(0xFFF4F6FA), onSurface = Color(0xFFF4F6FA),
-        secondary = theme.secondary
-    )) {
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            primary = theme.accent,
+            onPrimary = theme.background,
+            secondary = theme.secondary,
+            onSecondary = theme.background,
+            tertiary = theme.accent.copy(alpha = 0.82f),
+            background = theme.background,
+            onBackground = Color(0xFFF4F6FA),
+            surface = theme.surface,
+            onSurface = Color(0xFFF4F6FA),
+            surfaceVariant = theme.surface.copy(alpha = 0.92f),
+            onSurfaceVariant = theme.secondary,
+            outline = theme.secondary.copy(alpha = 0.45f)
+        ),
+        shapes = Shapes(
+            extraSmall = RoundedCornerShape(6.dp),
+            small = RoundedCornerShape(10.dp),
+            medium = RoundedCornerShape(16.dp),
+            large = RoundedCornerShape(24.dp),
+            extraLarge = RoundedCornerShape(30.dp)
+        )
+    ) {
         Box(Modifier.fillMaxSize().background(
             Brush.verticalGradient(listOf(theme.surface.copy(alpha = 0.72f), theme.background, theme.background))
         )) {
