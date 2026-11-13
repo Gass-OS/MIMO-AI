@@ -263,7 +263,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
     var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
-    var showLanguagePicker by remember { mutableStateOf(!prefs.getBoolean("language_selected", prefs.getBoolean("welcome_seen", false))) }
+    var showLanguagePicker by remember { mutableStateOf(!prefs.getBoolean("language_selected", false)) }
     var language by remember { mutableStateOf(prefs.getString("language", "ar-TN") ?: "ar-TN") }
     var page by remember { mutableStateOf("setup") }
     var locationGranted by remember {
