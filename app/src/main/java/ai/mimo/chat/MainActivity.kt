@@ -218,7 +218,7 @@ private val themes = listOf(
     MimoTheme("black", "Pure Black", Color(0xFF050608), Color(0xFF15171B), Color(0xFFE6E8ED), Color(0xFFAEB4C0))
 )
 
-private data class ChatMessage(val text: String, val fromUser: Boolean)
+data class ChatMessage(val text: String, val fromUser: Boolean)
 
 private data class MimoPerformanceProfile(
     val id: String, val title: String, val description: String,
