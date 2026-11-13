@@ -160,6 +160,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 WelcomeScreen(theme, onStart = {
                     prefs.edit().putBoolean("welcome_seen", true).apply()
                     showWelcome = false
+                    page = "setup"
                 })
             } else when (page) {
                 "settings" -> SettingsScreen(theme, themeId, wifiOnly, performanceId, speechEnabled, autoSpeak, speechRate,
@@ -184,6 +185,13 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     prefs.edit().putString("theme", it).apply()
                 }, onBack = { page = "chat" }, onManageModels = { page = "models" },
                     onPermissions = { page = "permissions" }, onAbout = { page = "about" }, onProjects = { page = "projects" })
+                "setup" -> SetupBootScreen(
+                    theme = theme,
+                    brainProgress = 0f,
+                    studioProgress = 0f,
+                    brainReady = false,
+                    onContinuePreview = { page = "chat" }
+                )
                 "models" -> ModelManagerScreen(theme, onBack = { page = "settings" })
                 "permissions" -> PermissionsScreen(theme, locationGranted, notificationsGranted, selectedPhoto != null,
                     onBack = { page = "settings" },
@@ -665,5 +673,148 @@ private fun SettingsRow(icon: androidx.compose.ui.graphics.vector.ImageVector, t
             Text(subtitle, color = theme.secondary, fontSize = 11.sp)
         }
         if (onClick != null) Icon(Icons.Outlined.ChevronRight, null, tint = theme.secondary, modifier = Modifier.size(18.dp))
+    }
+}
+
+
+@Composable
+private fun SetupBootScreen(
+    theme: MimoTheme,
+    brainProgress: Float,
+    studioProgress: Float,
+    brainReady: Boolean,
+    onContinuePreview: () -> Unit
+) {
+    val tips = listOf(
+        "Tip · You can ask MIMO to explain, translate, summarize and help you write.",
+        "Privacy · After setup, supported AI processing is designed to happen on your device.",
+        "Good to know · Keep MIMO open and connected to Wi-Fi during the first download.",
+        "Smart setup · MIMO prepares chat first, then continues the creative tools in the background."
+    )
+    var tipIndex by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(4200)
+            tipIndex = (tipIndex + 1) % tips.size
+        }
+    }
+    val safeBrain = brainProgress.coerceIn(0f, 1f)
+    val safeStudio = studioProgress.coerceIn(0f, 1f)
+    val blue = Color(0xFF66B7FF)
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.radialGradient(
+                colors = listOf(Color(0xFF123B70), Color(0xFF07172D), Color(0xFF02060D)),
+                radius = 1150f
+            )
+        )
+    ) {
+        Box(Modifier.align(Alignment.TopEnd).size(260.dp).offset(x = 100.dp, y = (-70).dp)
+            .clip(CircleShape).background(blue.copy(alpha = 0.07f)))
+        Box(Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-130).dp, y = 100.dp)
+            .clip(CircleShape).background(Color(0xFF1766B5).copy(alpha = 0.09f)))
+        Column(
+            Modifier.fillMaxSize().padding(horizontal = 25.dp, vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            BrandMark(theme.copy(accent = blue, surface = Color(0xFF102A49)), 82)
+            Spacer(Modifier.height(18.dp))
+            Text("MIMO AI", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+            Text("INITIALIZING YOUR PRIVATE AI", color = blue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            Spacer(Modifier.height(34.dp))
+            Text(
+                if (brainReady) "Your chat assistant is ready" else "Preparing MIMO Brain",
+                color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center
+            )
+            Text(
+                if (brainReady) "You can start chatting while Studio finishes in the background."
+                else "Setting up the language engine first. Image tools will follow automatically.",
+                color = Color(0xFFB9CDE4), fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 18.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Spacer(Modifier.height(22.dp))
+            Surface(
+                color = Color(0xFF071426).copy(alpha = 0.86f),
+                shape = RoundedCornerShape(22.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.24f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Psychology, null, tint = blue, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(9.dp))
+                        Text("MIMO Brain", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text(if (brainReady) "READY" else "${(safeBrain * 100).toInt()}%", color = blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = { if (brainReady) 1f else safeBrain },
+                        modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape),
+                        color = blue, trackColor = Color(0xFF1A2B40)
+                    )
+                    Text(
+                        if (brainReady) "Chat engine verified" else "Waiting for the verified download service",
+                        color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Spacer(Modifier.height(19.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.AutoAwesome, null, tint = Color(0xFF8CAEFF), modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(9.dp))
+                        Text("MIMO Studio", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text(if (safeStudio >= 1f) "READY" else if (brainReady) "${(safeStudio * 100).toInt()}% · BACKGROUND" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = { if (safeStudio >= 1f) 1f else safeStudio },
+                        modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape),
+                        color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40)
+                    )
+                    Text(
+                        if (brainReady && safeStudio < 1f) "Image creation is preparing in the background."
+                        else if (safeStudio >= 1f) "Creative tools verified"
+                        else "Starts after MIMO Brain is ready",
+                        color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Spacer(Modifier.height(18.dp))
+                    Text("SETUP PROGRESS", color = Color(0xFF8CAEFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                    val total = if (brainReady) (0.65f + safeStudio * 0.35f) else safeBrain * 0.65f
+                    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${(total * 100).toInt()}%", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+                        Spacer(Modifier.weight(1f))
+                        Text(if (brainReady && safeStudio < 1f) "Chat available · Studio continues" else "Actual verified progress", color = Color(0xFF9FB5CE), fontSize = 10.sp)
+                    }
+                    LinearProgressIndicator(
+                        progress = { total.coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape),
+                        color = blue, trackColor = Color(0xFF1A2B40)
+                    )
+                }
+            }
+            Spacer(Modifier.height(18.dp))
+            Surface(
+                color = Color(0xFF0B1D32).copy(alpha = 0.88f),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.15f)),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 62.dp)
+            ) {
+                Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Lightbulb, null, tint = Color(0xFFFFD27A), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(tips[tipIndex], color = Color(0xFFD5E5F7), fontSize = 11.sp, lineHeight = 16.sp)
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Text("FIRST SETUP · ABOUT 10 GB TOTAL", color = Color(0xFF7895B7), fontSize = 9.sp, letterSpacing = 1.3.sp)
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
+                Text("Continue to preview", color = Color(0xFFB9D8FA))
+            }
+            Text(
+                "This screen is ready for live installer progress. Downloads and engine verification are not connected in this build yet.",
+                color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 9.dp)
+            )
+        }
     }
 }
