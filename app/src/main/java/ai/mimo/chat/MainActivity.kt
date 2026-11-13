@@ -12,6 +12,8 @@ import android.view.View
 import android.widget.Toast
 import android.speech.tts.TextToSpeech
 import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -226,9 +228,9 @@ private data class MimoPerformanceProfile(
 
 private object MimoRuntimeConfig {
     val profiles = listOf(
-        MimoPerformanceProfile("low", "Low / Eco", "Save battery, heat and memory", 2, 0, 512),
-        MimoPerformanceProfile("medium", "Medium / Balanced", "Recommended for most phones", 4, 35, 640),
-        MimoPerformanceProfile("high", "High / Performance", "Use more available CPU/GPU resources", 8, 70, 768)
+        MimoPerformanceProfile("low", "Low · 2 GB", "Conservative mode · lower memory use", 2, 0, 512),
+        MimoPerformanceProfile("medium", "Medium · 4 GB", "Balanced mode · recommended for everyday phones", 4, 35, 640),
+        MimoPerformanceProfile("high", "Fort · 8 GB+", "Maximum mode · requires sufficient available memory", 8, 70, 768)
     )
     @Volatile var selected: MimoPerformanceProfile = profiles[1]
 }
@@ -263,9 +265,9 @@ class MainActivity : ComponentActivity() {
 private fun MimoApp(prefs: android.content.SharedPreferences) {
     val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
-    var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
-    var showLanguagePicker by remember { mutableStateOf(!prefs.getBoolean("language_selected", false)) }
-    var language by remember { mutableStateOf(prefs.getString("language", "ar-TN") ?: "ar-TN") }
+    var showWelcome by remember { mutableStateOf(!prefs.getBoolean("license_accepted", false)) }
+    var showLanguagePicker by remember { mutableStateOf(false) }
+    var language by remember { mutableStateOf(prefs.getString("language", when (Locale.getDefault().language) { "ar" -> "ar-TN"; "fr" -> "fr"; else -> "en" }) ?: "en") }
     var page by remember { mutableStateOf("setup") }
     var locationGranted by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -278,6 +280,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     val installer = remember(context) { ModelInstaller(context) }
     var wifiOnly by remember { mutableStateOf(prefs.getBoolean("wifi_only", true)) }
     var performanceId by remember { mutableStateOf(prefs.getString("performance_profile", installer.recommendedPerformanceProfile()) ?: installer.recommendedPerformanceProfile()) }
+    var saveConversations by remember { mutableStateOf(prefs.getBoolean("save_conversations", true)) }
     var speechEnabled by remember { mutableStateOf(prefs.getBoolean("speech_enabled", true)) }
     var autoSpeak by remember { mutableStateOf(prefs.getBoolean("auto_speak", false)) }
     var speechRate by remember { mutableFloatStateOf(prefs.getFloat("speech_rate", 1.0f)) }
@@ -352,7 +355,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     BackHandler(enabled = true) {
         when {
             showLanguagePicker -> { showLanguagePicker = false; page = "chat" }
-            showWelcome -> { showWelcome = false; page = "chat" }
+            showWelcome -> { showExitDialog = true }
             page == "settings" || page == "setup" -> { page = "chat"; showExitDialog = false }
             page == "models" || page == "permissions" || page == "about" || page == "projects" -> {
                 page = "settings"; showExitDialog = false
@@ -418,13 +421,18 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     showLanguagePicker = false
                 })
             } else if (showWelcome) {
-                WelcomeScreen(theme, onStart = {
-                    prefs.edit().putBoolean("welcome_seen", true).apply()
+                WelcomeScreen(theme = theme, language = language, onLanguage = {
+                    language = it
+                    prefs.edit().putString("language", it).putBoolean("language_selected", true).apply()
+                    tts.language = when (it) { "ar-TN" -> Locale("ar", "TN"); "fr" -> Locale.FRENCH; else -> Locale.ENGLISH }
+                }, onStart = {
+                    prefs.edit().putBoolean("license_accepted", true).putBoolean("welcome_seen", true).apply()
                     showWelcome = false
                     page = "setup"
                 })
             } else when (page) {
-                "settings" -> SettingsScreen(theme, themeId, wifiOnly, performanceId, speechEnabled, autoSpeak, speechRate,
+                "settings" -> SettingsScreen(theme, themeId, wifiOnly, performanceId, speechEnabled, autoSpeak, speechRate, saveConversations,
+                    onSaveConversations = { saveConversations = it; prefs.edit().putBoolean("save_conversations", it).apply() },
                     onWifiOnly = {
                     wifiOnly = it
                     prefs.edit().putBoolean("wifi_only", it).apply()
@@ -495,8 +503,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                             downloadAttempt++
                         }
                     },
-                    onContinuePreview = { page = "chat" }
-                )
+                     )
                 "models" -> ModelManagerScreen(theme, onBack = { page = "settings" })
                 "permissions" -> PermissionsScreen(theme, locationGranted, notificationsGranted, selectedPhoto != null,
                     onBack = { page = "settings" },
@@ -512,7 +519,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                     catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
                 })
-                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak)
+                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak, saveConversations = saveConversations, prefs = prefs)
             }
         }
     }
@@ -605,39 +612,45 @@ private fun formatModelBytes(bytes: Long): String {
 }
 
 @Composable
-private fun WelcomeScreen(theme: MimoTheme, onStart: () -> Unit) {
+private fun WelcomeScreen(theme: MimoTheme, language: String, onLanguage: (String) -> Unit, onStart: () -> Unit) {
     var step by remember { mutableIntStateOf(0) }
-    var accepted by remember { mutableStateOf(false) }
-    val titles = listOf(
-        "Welcome to MIMO AI",
-        "One assistant. Two creative tools.",
-        "Your privacy matters",
-        "Permissions and setup"
-    )
+    var privacyAccepted by remember { mutableStateOf(false) }
+    var licenseAccepted by remember { mutableStateOf(false) }
+    var languageMenuExpanded by remember { mutableStateOf(false) }
+    val titles = listOf("Welcome to MIMO AI", "One assistant. Two creative tools.", "Privacy policy", "User licence agreement", "Permissions and setup")
     val descriptions = listOf(
         "Your personal AI space for conversations, learning, writing and creative ideas.",
-        "MIMO Brain is planned for chat, answers and writing. MIMO Studio is planned for image creation. Both model files are downloaded only after your approval.",
-        "The model files come from their official public model repositories. Downloading them does not send your chat messages to those repositories. Offline AI features still require their runtime engines to be integrated.",
-        "Internet access is needed for the one-time model download. Notifications are optional. Photos, microphone, camera and location are requested only if you choose a feature that needs them."
+        "MIMO Brain powers chat, answers and writing. MIMO Studio is designed for image creation. You choose when to download each large model.",
+        "MIMO is designed for on-device AI. Your conversations and selected pictures are intended to stay in this app and are not sent to model repositories when downloading model files. Network features you choose, such as live information, may send the minimum request data needed to their providers. You control permissions and can clear saved conversations in Settings.",
+        "MIMO AI is an independent application. You may use it for lawful personal and professional purposes. You remain responsible for prompts and generated content and must respect third-party rights. Model weights and third-party components remain subject to their own licences. The app is provided as-is during development; availability and accuracy are not guaranteed. You may stop using MIMO and clear locally saved conversations at any time.",
+        "Internet access is required for model downloads. Notifications are optional. Photos, microphone, camera and location are requested only when you use a feature that needs them."
     )
-    val icons = listOf(
-        Icons.Outlined.Forum,
-        Icons.Outlined.AutoAwesome,
-        Icons.Outlined.Lock,
-        Icons.Outlined.Settings
-    )
+    val icons = listOf(Icons.Outlined.Forum, Icons.Outlined.AutoAwesome, Icons.Outlined.PrivacyTip, Icons.Outlined.Gavel, Icons.Outlined.Settings)
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 26.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Box {
+                TextButton(onClick = { languageMenuExpanded = true }) {
+                    Text(when (language) { "ar-TN" -> "🇹🇳 العربية"; "fr" -> "🇫🇷 Français"; else -> "🇬🇧 English" }, color = theme.accent, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Outlined.ExpandMore, null, tint = theme.accent)
+                }
+                DropdownMenu(expanded = languageMenuExpanded, onDismissRequest = { languageMenuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("🇬🇧 English") }, onClick = { onLanguage("en"); languageMenuExpanded = false })
+                    DropdownMenuItem(text = { Text("🇫🇷 Français") }, onClick = { onLanguage("fr"); languageMenuExpanded = false })
+                    DropdownMenuItem(text = { Text("🇹🇳 العربية") }, onClick = { onLanguage("ar-TN"); languageMenuExpanded = false })
+                }
+            }
+        }
         BrandMark(theme, 82)
         Spacer(Modifier.height(16.dp))
         Text("MIMO AI", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = theme.accent, letterSpacing = 2.sp)
-        Text("WELCOME · ${step + 1} / 4", color = theme.secondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text("WELCOME · ${step + 1} / 5", color = theme.secondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(24.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            repeat(4) { index ->
+            repeat(5) { index ->
                 Box(
                     Modifier.padding(horizontal = 4.dp).size(if (index == step) 22.dp else 7.dp, 7.dp)
                         .clip(CircleShape).background(if (index <= step) theme.accent else theme.secondary.copy(alpha = 0.35f))
@@ -657,23 +670,30 @@ private fun WelcomeScreen(theme: MimoTheme, onStart: () -> Unit) {
                 Text(titles[step], color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(12.dp))
                 Text(descriptions[step], color = theme.secondary, fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center)
+                if (step == 2) {
+                    Spacer(Modifier.height(18.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = privacyAccepted, onCheckedChange = { privacyAccepted = it })
+                        Text("I have read and accept the Privacy Policy.", color = Color.White, fontSize = 12.sp)
+                    }
+                }
                 if (step == 3) {
                     Spacer(Modifier.height(18.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = accepted, onCheckedChange = { accepted = it })
-                        Text("I understand and agree to continue with setup.", color = Color.White, fontSize = 12.sp)
+                        Checkbox(checked = licenseAccepted, onCheckedChange = { licenseAccepted = it })
+                        Text("I have read and accept the User Licence Agreement.", color = Color.White, fontSize = 12.sp)
                     }
                 }
             }
         }
         Spacer(Modifier.height(24.dp))
         Button(
-            onClick = { if (step < 3) step++ else onStart() },
-            enabled = step < 3 || accepted,
+            onClick = { if (step < 4) step++ else onStart() },
+            enabled = when (step) { 2 -> privacyAccepted; 3 -> licenseAccepted; else -> true },
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(if (step < 3) "Continue" else "Accept & continue", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(if (step < 4) "Continue" else "Accept & continue", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Outlined.ArrowForward, null)
         }
@@ -702,8 +722,25 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (String) -> Unit, speechEnabled: Boolean, autoSpeak: Boolean) {
-    val messages = remember { mutableStateListOf<ChatMessage>() }
+private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (String) -> Unit, speechEnabled: Boolean, autoSpeak: Boolean, saveConversations: Boolean, prefs: android.content.SharedPreferences) {
+    val messages = remember(saveConversations) {
+        mutableStateListOf<ChatMessage>().apply {
+            if (saveConversations) try {
+                val stored = JSONArray(prefs.getString("saved_conversation", "[]") ?: "[]")
+                for (i in 0 until stored.length()) {
+                    val item = stored.getJSONObject(i)
+                    add(ChatMessage(item.optString("text"), item.optBoolean("fromUser")))
+                }
+            } catch (_: Exception) { clear() }
+        }
+    }
+    LaunchedEffect(messages.size, saveConversations) {
+        if (saveConversations) {
+            val stored = JSONArray()
+            messages.forEach { msg -> stored.put(JSONObject().put("text", msg.text).put("fromUser", msg.fromUser)) }
+            prefs.edit().putString("saved_conversation", stored.toString()).apply()
+        } else prefs.edit().remove("saved_conversation").apply()
+    }
     var input by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -711,7 +748,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text("MIMO AI", fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = theme.accent)
-                Text("Your personal AI space", fontSize = 11.sp, color = theme.secondary)
+                Text("Mimo Gass v1 · Your personal AI", fontSize = 11.sp, color = theme.secondary)
             }
             IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings", tint = theme.secondary) }
         }
@@ -770,7 +807,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 }
             }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
         }
-        Text("Preview interface · AI engines not connected yet", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text("Mimo Gass v1 · Private AI workspace", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
     }
 }
 
@@ -793,8 +830,8 @@ private fun SuggestionChip(label: String, icon: androidx.compose.ui.graphics.vec
 
 @Composable
 private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean,
-    performanceId: String, speechEnabled: Boolean, autoSpeak: Boolean, speechRate: Float,
-    onWifiOnly: (Boolean) -> Unit, onPerformance: (String) -> Unit,
+    performanceId: String, speechEnabled: Boolean, autoSpeak: Boolean, speechRate: Float, saveConversations: Boolean,
+    onSaveConversations: (Boolean) -> Unit, onWifiOnly: (Boolean) -> Unit, onPerformance: (String) -> Unit,
     onSpeechEnabled: (Boolean) -> Unit, onAutoSpeak: (Boolean) -> Unit,
     onSpeechRate: (Float) -> Unit, onTestSpeech: () -> Unit,
     onTheme: (String) -> Unit, language: String, onLanguage: (String) -> Unit, onBack: () -> Unit,
@@ -837,6 +874,16 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean
                 SettingsHeader("PREFERENCES", theme)
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Save, null, tint = theme.accent, modifier = Modifier.size(23.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Save conversations", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Text("Keep this chat on this device for your next visit", color = theme.secondary, fontSize = 11.sp)
+                    }
+                    Switch(checked = saveConversations, onCheckedChange = onSaveConversations)
+                }
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Wifi, null, tint = theme.accent, modifier = Modifier.size(23.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
@@ -850,10 +897,10 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Language", color = Color.White, fontWeight = FontWeight.Medium)
-                        Text(if (language.startsWith("ar")) "Arabic (Tunisia)" else "English", color = theme.secondary, fontSize = 11.sp)
+                        Text(when { language.startsWith("ar") -> "العربية"; language == "fr" -> "Français"; else -> "English" }, color = theme.secondary, fontSize = 11.sp)
                     }
-                    TextButton(onClick = { onLanguage(if (language.startsWith("ar")) "en" else "ar-TN") }) {
-                        Text(if (language.startsWith("ar")) "English" else "العربية")
+                    TextButton(onClick = { onLanguage(when (language) { "en" -> "fr"; "fr" -> "ar-TN"; else -> "en" }) }) {
+                        Text(when (language) { "en" -> "🇫🇷 Français"; "fr" -> "🇹🇳 العربية"; else -> "🇬🇧 English" })
                     }
                 }
                 SettingsHeader("PERFORMANCE PROFILE", theme)
@@ -1137,8 +1184,7 @@ private fun SetupBootScreen(
     wifiOnly: Boolean,
     onWifiOnly: (Boolean) -> Unit,
     onLanguage: (String) -> Unit,
-    onStartDownloads: () -> Unit,
-    onContinuePreview: () -> Unit
+    onStartDownloads: () -> Unit
 ) {
     val tips = when (language) {
         "ar-TN" -> listOf(
@@ -1355,9 +1401,7 @@ private fun SetupBootScreen(
             Text("MIMO downloads Brain inside the app to private internal storage, resumes interrupted transfers, and verifies the file with SHA-256. Studio is optional.",
                 color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 7.dp))
-            OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
-                Text("Continue to preview", color = Color(0xFFB9D8FA))
-            }
+            
         }
         if (showDownloadConsent) {
             AlertDialog(
