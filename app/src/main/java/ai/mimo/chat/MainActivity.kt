@@ -396,7 +396,15 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         }
     }
 
-    BackHandler(enabled = true) { showExitDialog = true }
+    BackHandler(enabled = true) {
+        when {
+            showExitDialog -> showExitDialog = false
+            page == "chat" -> page = "setup"
+            page != "setup" -> page = "chat"
+            showWelcome || showLanguagePicker -> showExitDialog = true
+            else -> showExitDialog = true
+        }
+    }
     CompositionLocalProvider(
         LocalMimoArabic provides language.startsWith("ar"),
         LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -532,7 +540,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                     catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
                 })
-                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak)
+                else -> ChatScreen(theme, prefs = prefs, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak, downloadStarted = downloadStarted, brainProgress = brainProgress, studioProgress = studioProgress, brainDownloadedBytes = brainDownloadedBytes, brainTotalBytes = brainTotalBytes, studioDownloadedBytes = studioDownloadedBytes, studioTotalBytes = studioTotalBytes, brainVerified = brainVerified, studioVerified = studioVerified, downloadStatus = installerStatus)
             }
         }
     }
@@ -722,8 +730,45 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (String) -> Unit, speechEnabled: Boolean, autoSpeak: Boolean) {
-    val messages = remember { mutableStateListOf<ChatMessage>() }
+private fun ChatScreen(
+    theme: MimoTheme,
+    prefs: android.content.SharedPreferences,
+    onSettings: () -> Unit,
+    onSpeak: (String) -> Unit,
+    speechEnabled: Boolean,
+    autoSpeak: Boolean,
+    downloadStarted: Boolean,
+    brainProgress: Float,
+    studioProgress: Float,
+    brainDownloadedBytes: Long,
+    brainTotalBytes: Long,
+    studioDownloadedBytes: Long,
+    studioTotalBytes: Long,
+    brainVerified: Boolean,
+    studioVerified: Boolean,
+    downloadStatus: String
+) {
+    val messages = remember {
+        mutableStateListOf<ChatMessage>().apply {
+            val saved = prefs.getString("active_chat_messages", null)
+            if (!saved.isNullOrBlank()) {
+                try {
+                    val array = org.json.JSONArray(saved)
+                    for (index in 0 until array.length()) {
+                        val item = array.getJSONObject(index)
+                        add(ChatMessage(item.optString("text"), item.optBoolean("fromUser")))
+                    }
+                } catch (_: Exception) { clear() }
+            }
+        }
+    }
+    SideEffect {
+        val array = org.json.JSONArray()
+        messages.forEach { message ->
+            array.put(org.json.JSONObject().put("text", message.text).put("fromUser", message.fromUser))
+        }
+        prefs.edit().putString("active_chat_messages", array.toString()).apply()
+    }
     var input by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -734,6 +779,38 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 Text("Your personal AI space", fontSize = 11.sp, color = theme.secondary)
             }
             IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings", tint = theme.secondary) }
+        }
+        if (downloadStarted && !studioVerified) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                color = theme.surface.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, theme.accent.copy(alpha = 0.28f))
+            ) {
+                Column(Modifier.padding(horizontal = 13.dp, vertical = 10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.AutoAwesome, null, tint = theme.accent, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("MIMO Studio · image model", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        Text(if (brainVerified) "${String.format(Locale.US, "%.2f", studioProgress.coerceIn(0f, 1f) * 100f)}%" else "Queued", color = theme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(7.dp))
+                    LinearProgressIndicator(
+                        progress = { studioProgress.coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
+                        color = theme.accent, trackColor = theme.background
+                    )
+                    Text(
+                        when {
+                            !brainVerified -> "Waiting for MIMO Brain download to finish"
+                            studioTotalBytes > 0L -> "${formatModelBytes(studioDownloadedBytes)} / ${formatModelBytes(studioTotalBytes)} · $downloadStatus"
+                            else -> downloadStatus
+                        },
+                        color = theme.secondary, fontSize = 10.sp, lineHeight = 14.sp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+            }
         }
         if (messages.isEmpty()) {
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -790,7 +867,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 }
             }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
         }
-        Text("Preview interface · AI engines not connected yet", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text(if (studioVerified) "MIMO Studio model verified · image runtime integration still required" else "MIMO preview · model downloads continue in the background", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
     }
 }
 
