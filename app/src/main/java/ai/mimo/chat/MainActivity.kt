@@ -1160,12 +1160,26 @@ private fun SetupBootScreen(
     onStartDownloads: () -> Unit,
     onContinuePreview: () -> Unit
 ) {
-    val tips = listOf(
-        "Tip · You can ask MIMO to explain, translate, summarize and help you write.",
-        "Privacy · After setup, supported AI processing is designed to happen on your device.",
-        "Good to know · Keep MIMO open and connected to Wi-Fi during the first download.",
-        "Smart setup · MIMO prepares chat first, then continues the creative tools in the background."
-    )
+    val tips = when (language) {
+        "ar-TN" -> listOf(
+            "نصيحة · يمكنك طلب الشرح والترجمة والتلخيص والمساعدة في الكتابة من ميمو.",
+            "الخصوصية · بعد الإعداد، تتم معالجة مهام الذكاء الاصطناعي المدعومة على جهازك.",
+            "معلومة · أبقِ ميمو مفتوحاً ومتصلًا بالواي فاي أثناء التنزيل الأول.",
+            "إعداد ذكي · يتم تجهيز ميمو Brain أولاً، ثم تنزيل أدوات الإبداع."
+        )
+        "fr" -> listOf(
+            "Conseil · Demandez à MIMO d’expliquer, traduire, résumer ou vous aider à écrire.",
+            "Confidentialité · Après la configuration, les fonctions prises en charge sont conçues pour fonctionner sur votre appareil.",
+            "À savoir · Gardez MIMO ouvert et connecté au Wi-Fi pendant le premier téléchargement.",
+            "Configuration intelligente · MIMO prépare d’abord Brain, puis télécharge les outils créatifs."
+        )
+        else -> listOf(
+            "Tip · Ask MIMO to explain, translate, summarize and help you write.",
+            "Privacy · After setup, supported AI features are designed to run on your device.",
+            "Good to know · Keep MIMO open and connected to Wi-Fi during the first download.",
+            "Smart setup · MIMO prepares Brain first, then downloads the creative tools."
+        )
+    }
     var tipIndex by remember { mutableIntStateOf(0) }
     var languageMenuExpanded by remember { mutableStateOf(false) }
     var showDownloadConsent by remember { mutableStateOf(false) }
