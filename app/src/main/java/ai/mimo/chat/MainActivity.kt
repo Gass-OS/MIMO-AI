@@ -315,8 +315,8 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                                 installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded"
                             } else {
                                 installerStatus = when (transfer.status) {
-                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · Waiting for network…"
-                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Brain · Download paused; waiting to resume…"
+                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
+                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
                                     android.app.DownloadManager.STATUS_RUNNING -> "MIMO Brain · Connected; preparing download…"
                                     else -> "MIMO Brain · Checking download…"
                                 }
@@ -338,8 +338,8 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                                 installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded"
                             } else {
                                 installerStatus = when (transfer.status) {
-                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · Waiting for network…"
-                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Studio · Download paused; waiting to resume…"
+                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
+                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
                                     android.app.DownloadManager.STATUS_RUNNING -> "MIMO Studio · Connected; preparing download…"
                                     else -> "MIMO Studio · Checking download…"
                                 }
@@ -432,6 +432,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     downloadStarted = downloadStarted,
                     statusMessage = installerStatus,
                     language = language,
+                    wifiOnly = wifiOnly,
+                    onWifiOnly = { value ->
+                        wifiOnly = value
+                        prefs.edit().putBoolean("wifi_only", value).apply()
+                    },
                     onLanguage = {
                         language = it
                         prefs.edit().putString("language", it).apply()
@@ -987,6 +992,8 @@ private fun SetupBootScreen(
     downloadStarted: Boolean,
     statusMessage: String,
     language: String,
+    wifiOnly: Boolean,
+    onWifiOnly: (Boolean) -> Unit,
     onLanguage: (String) -> Unit,
     onStartDownloads: () -> Unit,
     onContinuePreview: () -> Unit
@@ -1139,6 +1146,21 @@ private fun SetupBootScreen(
                     Icon(Icons.Outlined.Lightbulb, null, tint = Color(0xFFFFD27A), modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
                     Text(tips[tipIndex], color = Color(0xFFD5E5F7), fontSize = 11.sp, lineHeight = 16.sp)
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Surface(
+                color = Color(0xFF0B1D32).copy(alpha = 0.88f),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.18f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Wi-Fi only", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(if (wifiOnly) "Downloads wait for Wi-Fi" else "Mobile data is allowed", color = Color(0xFF9FB5CE), fontSize = 10.sp)
+                    }
+                    Switch(checked = wifiOnly, onCheckedChange = onWifiOnly)
                 }
             }
             Spacer(Modifier.height(16.dp))
