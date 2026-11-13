@@ -171,7 +171,29 @@ private object MimoArabic {
         "Model file verified · image runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك الصور ما زال مطلوباً",
         "Starts after MIMO Brain is verified" to "يبدأ بعد التحقق من عقل ميمو",
         "Resume / retry downloads" to "استئناف / إعادة التنزيل", "Start downloads · about 9.5 GB" to "بدء التنزيل · حوالي 9.5 جيجابايت",
-        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل."
+        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل.",
+        "Welcome to MIMO AI" to "مرحباً بك في ميمو AI",
+        "One assistant. Two creative tools." to "مساعد واحد وأداتان للإبداع",
+        "Your privacy matters" to "خصوصيتك تهمّنا",
+        "Permissions and setup" to "الأذونات والإعداد",
+        "Your personal AI space for conversations, learning, writing and creative ideas." to "مساحتك الذكية للمحادثة والتعلّم والكتابة والأفكار الإبداعية.",
+        "MIMO Brain is planned for chat, answers and writing. MIMO Studio is planned for image creation. Both model files are downloaded only after your approval." to "يُخصّص عقل ميمو للمحادثة والإجابات والكتابة، واستوديو ميمو لإنشاء الصور. لن يتم تنزيل أي ملف قبل موافقتك.",
+        "The model files come from their official public model repositories. Downloading them does not send your chat messages to those repositories. Offline AI features still require their runtime engines to be integrated." to "تأتي ملفات النماذج من مستودعاتها الرسمية والعامة. تنزيلها لا يرسل محادثاتك إلى تلك المستودعات. كما أن تشغيل الذكاء الاصطناعي دون إنترنت يتطلب دمج محركات التشغيل.",
+        "Internet access is needed for the one-time model download. Notifications are optional. Photos, microphone, camera and location are requested only if you choose a feature that needs them." to "يلزم اتصال الإنترنت لتنزيل النماذج لمرة واحدة. الإشعارات اختيارية، ولن نطلب الصور أو الميكروفون أو الكاميرا أو الموقع إلا عند استخدام ميزة تحتاج إليها.",
+        "I understand and agree to continue with setup." to "أفهم المعلومات وأوافق على متابعة الإعداد.",
+        "Continue" to "متابعة",
+        "Accept & continue" to "أوافق وأتابع",
+        "Review & download · about 9.5 GB" to "مراجعة وتنزيل · حوالي 9.5 جيجابايت",
+        "Download MIMO models?" to "تنزيل نماذج ميمو؟",
+        "The first setup downloads about 9.5 GB in total:" to "يتطلب الإعداد الأول تنزيل حوالي 9.5 جيجابايت:",
+        "• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB" to "• عقل ميمو · Qwen3 4B Q4_K_M · حوالي 2.5 جيجابايت",
+        "• MIMO Studio · SDXL 1.0 · about 6.94 GB" to "• استوديو ميمو · SDXL 1.0 · حوالي 6.94 جيجابايت",
+        "Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup." to "سيتم تنزيل الملفات بالتتابع والتحقق منها باستخدام SHA-256 قبل اعتمادها. يرجى توفير 15 جيجابايت على الأقل.",
+        "Wi-Fi only is ON. Downloads will wait for Wi-Fi." to "التنزيل عبر Wi‑Fi فقط مفعّل. سينتظر التنزيل توفر شبكة Wi‑Fi.",
+        "Mobile data is allowed. Your carrier may charge data fees." to "بيانات الهاتف مسموحة. قد تُحتسب رسوم من شركة الاتصالات.",
+        "I approve downloading these large model files to this device." to "أوافق على تنزيل ملفات النماذج الكبيرة إلى هذا الجهاز.",
+        "Accept & start download" to "أوافق وابدأ التنزيل",
+        "Not now" to "ليس الآن"
 
     )
     fun translate(value: String): String = phrases[value] ?: when {
@@ -240,7 +262,7 @@ class MainActivity : ComponentActivity() {
 private fun MimoApp(prefs: android.content.SharedPreferences) {
     val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
-    var showWelcome by remember { mutableStateOf(false) }
+    var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
     var language by remember { mutableStateOf(prefs.getString("language", "ar-TN") ?: "ar-TN") }
     var page by remember { mutableStateOf("setup") }
     var locationGranted by remember {
@@ -324,7 +346,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     if (!brainVerified) {
-                        installerStatus = "MIMO Brain download failed. Check your connection and try again."
+                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.BRAIN))
+                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
+                            "MIMO Brain download failed: ${installer.describeReason(failed)} (Android code ${failed.reason})."
+                        } else "MIMO Brain download failed. Check the connection and retry."
                         return@LaunchedEffect
                     }
                 }
@@ -347,7 +372,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     if (!studioVerified) {
-                        installerStatus = "MIMO Studio download failed. MIMO Brain remains safely verified; retry to continue."
+                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.STUDIO))
+                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
+                            "MIMO Studio download failed: ${installer.describeReason(failed)} (Android code ${failed.reason}). Brain remains verified."
+                        } else "MIMO Studio download failed. MIMO Brain remains verified; retry to continue."
                         return@LaunchedEffect
                     }
                 }
@@ -530,28 +558,82 @@ private fun BrandMark(theme: MimoTheme, size: Int = 54) {
 
 @Composable
 private fun WelcomeScreen(theme: MimoTheme, onStart: () -> Unit) {
+    var step by remember { mutableIntStateOf(0) }
+    var accepted by remember { mutableStateOf(false) }
+    val titles = listOf(
+        "Welcome to MIMO AI",
+        "One assistant. Two creative tools.",
+        "Your privacy matters",
+        "Permissions and setup"
+    )
+    val descriptions = listOf(
+        "Your personal AI space for conversations, learning, writing and creative ideas.",
+        "MIMO Brain is planned for chat, answers and writing. MIMO Studio is planned for image creation. Both model files are downloaded only after your approval.",
+        "The model files come from their official public model repositories. Downloading them does not send your chat messages to those repositories. Offline AI features still require their runtime engines to be integrated.",
+        "Internet access is needed for the one-time model download. Notifications are optional. Photos, microphone, camera and location are requested only if you choose a feature that needs them."
+    )
+    val icons = listOf(
+        Icons.Outlined.Forum,
+        Icons.Outlined.AutoAwesome,
+        Icons.Outlined.Lock,
+        Icons.Outlined.Settings
+    )
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 26.dp, vertical = 30.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 26.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        BrandMark(theme, 88)
-        Spacer(Modifier.height(20.dp))
-        Text("MIMO AI", fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = theme.accent, letterSpacing = 2.sp)
-        Text("One chat. Two creative minds. Your device.", color = theme.secondary, textAlign = TextAlign.Center, fontSize = 14.sp)
-        Spacer(Modifier.height(34.dp))
-        InfoFeature(theme, Icons.Outlined.Forum, "Talk naturally", "Ask questions, write, translate, learn and explore with your local AI assistant.")
-        InfoFeature(theme, Icons.Outlined.AutoAwesome, "Create images", "Describe an image and MIMO will create it and place the result directly in your chat.")
-        InfoFeature(theme, Icons.Outlined.PhoneAndroid, "Private and on-device", "After the one-time model setup, supported AI features are designed to work offline.")
-        InfoFeature(theme, Icons.Outlined.Download, "One-time setup", "The AI models are large, so the first launch will download and verify them with a progress bar.")
-        Spacer(Modifier.height(28.dp))
-        Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(18.dp)) {
-            Text("Enter MIMO AI", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        BrandMark(theme, 82)
+        Spacer(Modifier.height(16.dp))
+        Text("MIMO AI", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = theme.accent, letterSpacing = 2.sp)
+        Text("WELCOME · ${step + 1} / 4", color = theme.secondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            repeat(4) { index ->
+                Box(
+                    Modifier.padding(horizontal = 4.dp).size(if (index == step) 22.dp else 7.dp, 7.dp)
+                        .clip(CircleShape).background(if (index <= step) theme.accent else theme.secondary.copy(alpha = 0.35f))
+                )
+            }
+        }
+        Spacer(Modifier.height(22.dp))
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = theme.surface.copy(alpha = 0.9f),
+            shape = RoundedCornerShape(22.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, theme.accent.copy(alpha = 0.22f))
+        ) {
+            Column(Modifier.padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(icons[step], null, tint = theme.accent, modifier = Modifier.size(42.dp))
+                Spacer(Modifier.height(16.dp))
+                Text(titles[step], color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(12.dp))
+                Text(descriptions[step], color = theme.secondary, fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center)
+                if (step == 3) {
+                    Spacer(Modifier.height(18.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = accepted, onCheckedChange = { accepted = it })
+                        Text("I understand and agree to continue with setup.", color = Color.White, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Button(
+            onClick = { if (step < 3) step++ else onStart() },
+            enabled = step < 3 || accepted,
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(if (step < 3) "Continue" else "Accept & continue", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Outlined.ArrowForward, null)
         }
-        Spacer(Modifier.height(12.dp))
-        Text("Your assistant is getting ready.", color = theme.secondary.copy(alpha = 0.75f), fontSize = 12.sp)
+        if (step > 0) {
+            TextButton(onClick = { step--; accepted = false }) {
+                Text("Back", color = theme.secondary)
+            }
+        }
     }
 }
 
@@ -1014,6 +1096,8 @@ private fun SetupBootScreen(
     )
     var tipIndex by remember { mutableIntStateOf(0) }
     var languageMenuExpanded by remember { mutableStateOf(false) }
+    var showDownloadConsent by remember { mutableStateOf(false) }
+    var downloadConsentAccepted by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(4200)
@@ -1177,11 +1261,11 @@ private fun SetupBootScreen(
             Text(statusMessage, color = Color(0xFFB9CDE4), fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 15.sp)
             Spacer(Modifier.height(10.dp))
             Button(
-                onClick = onStartDownloads,
+                onClick = { downloadConsentAccepted = false; showDownloadConsent = true },
                 enabled = !downloadStarted || (!brainReady || !studioReady),
                 colors = ButtonDefaults.buttonColors(containerColor = blue, contentColor = Color(0xFF061426))
             ) {
-                Text(if (downloadStarted) "Resume / retry downloads" else "Start downloads · about 9.5 GB", fontWeight = FontWeight.Bold)
+                Text(if (downloadStarted) "Resume / retry downloads" else "Review & download · about 9.5 GB", fontWeight = FontWeight.Bold)
             }
             Text("Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
                 color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
@@ -1189,6 +1273,39 @@ private fun SetupBootScreen(
             OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
                 Text("Continue to preview", color = Color(0xFFB9D8FA))
             }
+        }
+        if (showDownloadConsent) {
+            AlertDialog(
+                onDismissRequest = { showDownloadConsent = false },
+                title = { Text("Download MIMO models?") },
+                text = {
+                    Column {
+                        Text("The first setup downloads about 9.5 GB in total:", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(12.dp))
+                        Text("• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
+                        Text("• MIMO Studio · SDXL 1.0 · about 6.94 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(if (wifiOnly) "Wi-Fi only is ON. Downloads will wait for Wi-Fi." else "Mobile data is allowed. Your carrier may charge data fees.", color = Color(0xFFB9CDE4), fontSize = 11.sp)
+                        Spacer(Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = downloadConsentAccepted, onCheckedChange = { downloadConsentAccepted = it })
+                            Text("I approve downloading these large model files to this device.", color = Color.White, fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        enabled = downloadConsentAccepted,
+                        onClick = { showDownloadConsent = false; onStartDownloads() }
+                    ) { Text("Accept & start download") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDownloadConsent = false }) { Text("Not now", color = Color(0xFFB9CDE4)) }
+                },
+                containerColor = Color(0xFF10243B)
+            )
         }
     }
 }
