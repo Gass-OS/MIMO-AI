@@ -29,6 +29,15 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.Text as MaterialText
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextOverflow
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.platform.LocalTextStyle
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
+import android.app.Activity
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
@@ -40,6 +49,57 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+private val LocalMimoArabic = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+@Composable
+private fun Text(
+    text: String, modifier: Modifier = Modifier, color: Color = Color.Unspecified,
+    fontSize: TextUnit = TextUnit.Unspecified, fontWeight: FontWeight? = null,
+    textAlign: TextAlign? = null, lineHeight: TextUnit = TextUnit.Unspecified,
+    letterSpacing: TextUnit = TextUnit.Unspecified, maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip, style: TextStyle = LocalTextStyle.current
+) {
+    val arabic = LocalMimoArabic.current
+    MaterialText(
+        text = if (arabic) MimoArabic.translate(text) else text,
+        modifier = modifier, color = color, fontSize = fontSize, fontWeight = fontWeight,
+        textAlign = textAlign, lineHeight = lineHeight, letterSpacing = letterSpacing,
+        maxLines = maxLines, overflow = overflow, style = style
+    )
+}
+
+private object MimoArabic {
+    private val phrases = mapOf(
+        "One chat. Two creative minds. Your device." to "محادثة واحدة، وقدرات إبداعية، وعلى جهازك.",
+        "Enter MIMO AI" to "ادخل إلى ميمو AI", "Your assistant is getting ready." to "مساعدك يستعدّ للعمل.",
+        "Talk naturally" to "تحدّث بطبيعتك", "Ask questions, write, translate, learn and explore with your local AI assistant." to "اسأل، واكتب، وترجم، وتعلّم واكتشف مع مساعدك الذكي على الجهاز.",
+        "Create images" to "أنشئ الصور", "Describe an image and MIMO will create it and place the result directly in your chat." to "صف الصورة التي تريدها وسيُنشئها ميمو ويعرضها مباشرة داخل المحادثة.",
+        "Private and on-device" to "خصوصية ومعالجة على الجهاز", "After the one-time model setup, supported AI features are designed to work offline." to "بعد إعداد الملفات لأول مرة، ستعمل الميزات المدعومة دون إنترنت.",
+        "One-time setup" to "إعداد لمرة واحدة", "The AI models are large, so the first launch will download and verify them with a progress bar." to "ملفات الذكاء الاصطناعي كبيرة؛ لذلك سيجري تنزيلها والتحقق منها عند التشغيل الأول مع عرض التقدّم.",
+        "Your personal AI space" to "مساحتك الذكية الشخصية", "Chat, explore ideas or create something amazing." to "تحدّث، واكتشف أفكاراً، أو أنشئ شيئاً رائعاً.",
+        "Explain something" to "فسّر لي موضوعاً", "Help me write" to "ساعدني في الكتابة", "Create an image" to "أنشئ صورة",
+        "Message MIMO AI..." to "اكتب رسالة إلى ميمو...", "Preview interface · AI engines not connected yet" to "واجهة تجريبية · محركات الذكاء الاصطناعي لم تُربط بعد",
+        "Settings" to "الإعدادات", "Choose your MIMO style" to "اختر مظهر ميمو", "Wi-Fi only downloads" to "التنزيل عبر Wi‑Fi فقط",
+        "Avoid large model downloads on mobile data" to "تجنّب تنزيل الملفات الكبيرة عبر بيانات الهاتف", "Language" to "اللغة",
+        "English · language selector planned" to "العربية (تونس) / English", "Arabic (Tunisia)" to "العربية (تونس)",
+        "English" to "الإنجليزية", "Language engine" to "محرك اللغة", "Image engine" to "محرك الصور",
+        "Model Manager" to "إدارة الملفات", "Manage setup and offline model files" to "إدارة الإعداد والملفات اللازمة للعمل دون إنترنت",
+        "Device permissions" to "أذونات الجهاز", "About MIMO AI" to "حول ميمو AI", "My Projects" to "مشاريعي",
+        "Prepare MIMO for offline use" to "جهّز ميمو للعمل دون إنترنت", "Not installed" to "غير مثبّت",
+        "Waiting for a verified download source" to "في انتظار مصدر تنزيل موثوق", "MIMO Brain" to "عقل ميمو",
+        "MIMO Studio" to "استوديو ميمو", "READY" to "جاهز", "QUEUED" to "في الانتظار",
+        "SETUP PROGRESS" to "تقدّم الإعداد", "FIRST SETUP · ABOUT 10 GB TOTAL" to "الإعداد الأول · حوالي 10 جيجابايت",
+        "Continue to preview" to "المتابعة إلى المعاينة", "INITIALIZING YOUR PRIVATE AI" to "جارٍ تجهيز مساعدك الذكي الخاص",
+        "Preparing MIMO Brain" to "جارٍ تجهيز عقل ميمو", "Your chat assistant is ready" to "مساعد المحادثة جاهز",
+        "MIMO's main intelligence — the brain behind conversations, answers, writing, translation and everyday assistance." to "الذكاء الأساسي لميمو — العقل الذي يدعم المحادثات والإجابات والكتابة والترجمة والمساعدة اليومية.",
+        "MIMO's creative studio — turns your text descriptions and ideas into original pictures." to "استوديو ميمو الإبداعي — يحوّل وصفك وأفكارك المكتوبة إلى صور أصلية.",
+        "Chat engine verified" to "تم التحقق من محرك المحادثة", "Starts after MIMO Brain is ready" to "يبدأ بعد جاهزية عقل ميمو",
+        "Actual verified progress" to "التقدّم الفعلي بعد التحقق", "Chat available · Studio continues" to "المحادثة متاحة · ويستمر الاستوديو",
+        "This screen is ready for live installer progress. Downloads and engine verification are not connected in this build yet." to "هذه الشاشة جاهزة لعرض تقدّم التنزيل الفعلي. خدمة التنزيل والتحقق من المحركات غير مفعّلة في هذا الإصدار التجريبي بعد."
+    )
+    fun translate(value: String): String = phrases[value] ?: value
+}
 
 private data class MimoTheme(
     val id: String, val title: String, val background: Color,
@@ -99,8 +159,9 @@ class MainActivity : ComponentActivity() {
 private fun MimoApp(prefs: android.content.SharedPreferences) {
     val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
-    var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
-    var page by remember { mutableStateOf("chat") }
+    var showWelcome by remember { mutableStateOf(false) }
+    var language by remember { mutableStateOf(prefs.getString("language", "ar-TN") ?: "ar-TN") }
+    var page by remember { mutableStateOf("setup") }
     var locationGranted by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
@@ -148,6 +209,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
     val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
 
+    BackHandler(enabled = true) { (context as? Activity)?.finishAndRemoveTask() }
+    CompositionLocalProvider(
+        LocalMimoArabic provides language.startsWith("ar"),
+        LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
+    ) {
     MaterialTheme(colorScheme = darkColorScheme(
         background = theme.background, surface = theme.surface,
         primary = theme.accent, onPrimary = Color(0xFF080B10),
@@ -184,6 +250,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     onTheme = {
                     themeId = it
                     prefs.edit().putString("theme", it).apply()
+                }, language = language, onLanguage = {
+                    language = it
+                    prefs.edit().putString("language", it).apply()
+                    val locale = if (it.startsWith("ar")) Locale("ar", "TN") else Locale.ENGLISH
+                    tts.language = locale
                 }, onBack = { page = "chat" }, onManageModels = { page = "models" },
                     onPermissions = { page = "permissions" }, onAbout = { page = "about" }, onProjects = { page = "projects" })
                 "setup" -> SetupBootScreen(
@@ -211,6 +282,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak)
             }
         }
+    }
     }
 }
 
@@ -394,7 +466,7 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean
     onWifiOnly: (Boolean) -> Unit, onPerformance: (String) -> Unit,
     onSpeechEnabled: (Boolean) -> Unit, onAutoSpeak: (Boolean) -> Unit,
     onSpeechRate: (Float) -> Unit, onTestSpeech: () -> Unit,
-    onTheme: (String) -> Unit, onBack: () -> Unit,
+    onTheme: (String) -> Unit, language: String, onLanguage: (String) -> Unit, onBack: () -> Unit,
     onManageModels: () -> Unit, onPermissions: () -> Unit, onAbout: () -> Unit, onProjects: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -442,7 +514,17 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean
                     }
                     Switch(checked = wifiOnly, onCheckedChange = onWifiOnly)
                 }
-                SettingsRow(Icons.Outlined.Language, "Language", "English · language selector planned", theme)
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Language, null, tint = theme.accent)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Language", color = Color.White, fontWeight = FontWeight.Medium)
+                        Text(if (language.startsWith("ar")) "Arabic (Tunisia)" else "English", color = theme.secondary, fontSize = 11.sp)
+                    }
+                    TextButton(onClick = { onLanguage(if (language.startsWith("ar")) "en" else "ar-TN") }) {
+                        Text(if (language.startsWith("ar")) "English" else "العربية")
+                    }
+                }
                 SettingsHeader("PERFORMANCE PROFILE", theme)
                 Text("Choose how much processing power future local AI engines may use. The selected profile is saved for the chat and image engines.", color = theme.secondary, fontSize = 12.sp, lineHeight = 17.sp)
                 MimoRuntimeConfig.profiles.forEach { profile ->
