@@ -221,7 +221,36 @@ private fun BrandMark(theme: MimoTheme, size: Int = 54) {
             .border(1.dp, theme.accent.copy(alpha = 0.55f), RoundedCornerShape((size * 0.28f).dp)),
         contentAlignment = Alignment.Center
     ) {
-        Text("M", color = theme.accent, fontSize = (size * 0.58f).sp, fontWeight = FontWeight.Black)
+        Canvas(Modifier.size((size * 0.72f).dp)) {
+            val c = theme.accent
+            val w = this.size.width
+            val h = this.size.height
+            // Antenna and signal tip
+            drawLine(c, androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.17f),
+                androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.04f), strokeWidth = w * 0.055f)
+            drawCircle(c, radius = w * 0.065f, center = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.035f))
+            // Side ear modules
+            drawRoundRect(c, topLeft = androidx.compose.ui.geometry.Offset(w * 0.04f, h * 0.43f),
+                size = androidx.compose.ui.geometry.Size(w * 0.17f, h * 0.28f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.07f))
+            drawRoundRect(c, topLeft = androidx.compose.ui.geometry.Offset(w * 0.79f, h * 0.43f),
+                size = androidx.compose.ui.geometry.Size(w * 0.17f, h * 0.28f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.07f))
+            // Friendly robot head
+            drawRoundRect(c, topLeft = androidx.compose.ui.geometry.Offset(w * 0.16f, h * 0.18f),
+                size = androidx.compose.ui.geometry.Size(w * 0.68f, h * 0.66f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.19f))
+            // Dark face panel
+            drawRoundRect(Color(0xFF071426), topLeft = androidx.compose.ui.geometry.Offset(w * 0.23f, h * 0.27f),
+                size = androidx.compose.ui.geometry.Size(w * 0.54f, h * 0.43f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.13f))
+            // Bright eyes and a friendly smile
+            drawCircle(Color.White, radius = w * 0.055f, center = androidx.compose.ui.geometry.Offset(w * 0.39f, h * 0.43f))
+            drawCircle(Color.White, radius = w * 0.055f, center = androidx.compose.ui.geometry.Offset(w * 0.61f, h * 0.43f))
+            drawLine(c, androidx.compose.ui.geometry.Offset(w * 0.40f, h * 0.57f),
+                androidx.compose.ui.geometry.Offset(w * 0.60f, h * 0.57f), strokeWidth = w * 0.045f,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        }
     }
 }
 
@@ -741,6 +770,11 @@ private fun SetupBootScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(18.dp)) {
+                    Text(
+                        "MIMO's main intelligence — the brain behind conversations, answers, writing, translation and everyday assistance.",
+                        color = Color(0xFFB9CDE4), fontSize = 11.sp, lineHeight = 16.sp,
+                        modifier = Modifier.padding(bottom = 11.dp)
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Psychology, null, tint = blue, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
@@ -758,6 +792,11 @@ private fun SetupBootScreen(
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(Modifier.height(19.dp))
+                    Text(
+                        "MIMO's creative studio — turns your text descriptions and ideas into original pictures.",
+                        color = Color(0xFFB9CDE4), fontSize = 11.sp, lineHeight = 16.sp,
+                        modifier = Modifier.padding(bottom = 11.dp)
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.AutoAwesome, null, tint = Color(0xFF8CAEFF), modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
