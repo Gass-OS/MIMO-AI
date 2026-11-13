@@ -434,8 +434,16 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     language = language,
                     wifiOnly = wifiOnly,
                     onWifiOnly = { value ->
-                        wifiOnly = value
-                        prefs.edit().putBoolean("wifi_only", value).apply()
+                        if (wifiOnly != value) {
+                            wifiOnly = value
+                            prefs.edit().putBoolean("wifi_only", value).apply()
+                            if (downloadStarted) {
+                                installer.resetTransferForNetworkChange(ModelInstaller.Model.BRAIN)
+                                installer.resetTransferForNetworkChange(ModelInstaller.Model.STUDIO)
+                                downloadAttempt++
+                                installerStatus = if (value) "Switching to Wi-Fi-only download…" else "Allowing mobile data; restarting the pending transfer…"
+                            }
+                        }
                     },
                     onLanguage = {
                         language = it
