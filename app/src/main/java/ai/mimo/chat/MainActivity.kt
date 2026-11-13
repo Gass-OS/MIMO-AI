@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val LocalMimoArabic = androidx.compose.runtime.staticCompositionLocalOf { false }
+private val LocalMimoLanguage = androidx.compose.runtime.staticCompositionLocalOf { "en" }
 
 @Composable
 private fun Text(
@@ -65,8 +66,9 @@ private fun Text(
     overflow: TextOverflow = TextOverflow.Clip, style: TextStyle = LocalTextStyle.current
 ) {
     val arabic = LocalMimoArabic.current
+    val language = LocalMimoLanguage.current
     MaterialText(
-        text = if (arabic) MimoArabic.translate(text) else text,
+        text = when { arabic -> MimoArabic.translate(text); language == "fr" -> MimoFrench.translate(text); else -> text },
         modifier = modifier, color = color, fontSize = fontSize, fontWeight = fontWeight,
         textAlign = textAlign, lineHeight = lineHeight, letterSpacing = letterSpacing,
         maxLines = maxLines, overflow = overflow, style = style
@@ -75,6 +77,18 @@ private fun Text(
 
 private object MimoArabic {
     private val phrases = mapOf(
+        "Welcome to MIMO AI" to "مرحباً بك في ميمو AI",
+        "One assistant. Two creative tools." to "مساعد واحد وأداتان للإبداع",
+        "Privacy policy" to "سياسة الخصوصية",
+        "User licence agreement" to "اتفاقية ترخيص المستخدم",
+        "Permissions and setup" to "الأذونات والإعداد",
+        "I have read and accept the Privacy Policy." to "قرأت سياسة الخصوصية وأوافق عليها.",
+        "I have read and accept the User Licence Agreement." to "قرأت اتفاقية ترخيص المستخدم وأوافق عليها.",
+        "Continue" to "متابعة",
+        "Accept & continue" to "أوافق وأتابع",
+        "🇬🇧 English" to "🇬🇧 الإنجليزية",
+        "🇫🇷 Français" to "🇫🇷 الفرنسية",
+        "🇹🇳 العربية" to "🇹🇳 العربية",
         "One chat. Two creative minds. Your device." to "محادثة واحدة، وقدرات إبداعية، وعلى جهازك.",
         "Enter MIMO AI" to "ادخل إلى ميمو AI", "Your assistant is getting ready." to "مساعدك يستعدّ للعمل.",
         "Talk naturally" to "تحدّث بطبيعتك", "Ask questions, write, translate, learn and explore with your local AI assistant." to "اسأل، واكتب، وترجم، وتعلّم واكتشف مع مساعدك الذكي على الجهاز.",
@@ -205,6 +219,46 @@ private object MimoArabic {
         value.startsWith("Download setup error: ") -> "حدث خطأ في إعداد التنزيل: " + value.substringAfter("Download setup error: ")
         else -> value
     }
+}
+
+private object MimoFrench {
+    private val phrases = mapOf(
+        "Welcome to MIMO AI" to "Bienvenue dans MIMO AI",
+        "One assistant. Two creative tools." to "Un assistant. Deux outils créatifs.",
+        "Privacy policy" to "Politique de confidentialité",
+        "User licence agreement" to "Contrat de licence utilisateur",
+        "Permissions and setup" to "Autorisations et configuration",
+        "Your personal AI space for conversations, learning, writing and creative ideas." to "Votre espace IA personnel pour discuter, apprendre, écrire et explorer vos idées.",
+        "MIMO Brain powers chat, answers and writing. MIMO Studio is designed for image creation. You choose when to download each large model." to "MIMO Brain alimente les conversations, les réponses et la rédaction. MIMO Studio est conçu pour créer des images. Vous choisissez quand télécharger chaque modèle volumineux.",
+        "MIMO is designed for on-device AI. Your conversations and selected pictures are intended to stay in this app and are not sent to model repositories when downloading model files. Network features you choose, such as live information, may send the minimum request data needed to their providers. You control permissions and can clear saved conversations in Settings." to "MIMO est conçu pour exécuter l’IA sur votre appareil. Vos conversations et images sélectionnées sont destinées à rester dans l’application et ne sont pas envoyées aux dépôts de modèles pendant les téléchargements. Les fonctions réseau que vous choisissez peuvent transmettre aux fournisseurs les données strictement nécessaires. Vous contrôlez les autorisations et pouvez effacer les conversations enregistrées dans les paramètres.",
+        "MIMO AI is an independent application. You may use it for lawful personal and professional purposes. You remain responsible for prompts and generated content and must respect third-party rights. Model weights and third-party components remain subject to their own licences. The app is provided as-is during development; availability and accuracy are not guaranteed. You may stop using MIMO and clear locally saved conversations at any time." to "MIMO AI est une application indépendante. Vous pouvez l’utiliser à des fins personnelles et professionnelles licites. Vous êtes responsable de vos requêtes et des contenus générés, et devez respecter les droits des tiers. Les modèles et composants tiers restent soumis à leurs propres licences. Pendant le développement, l’application est fournie en l’état, sans garantie de disponibilité ni d’exactitude. Vous pouvez cesser d’utiliser MIMO et supprimer les conversations enregistrées localement à tout moment.",
+        "Internet access is required for model downloads. Notifications are optional. Photos, microphone, camera and location are requested only when you use a feature that needs them." to "Une connexion Internet est nécessaire pour télécharger les modèles. Les notifications sont facultatives. L’accès aux photos, au microphone, à l’appareil photo et à la localisation n’est demandé que pour les fonctions qui en ont besoin.",
+        "I have read and accept the Privacy Policy." to "J’ai lu et j’accepte la politique de confidentialité.",
+        "I have read and accept the User Licence Agreement." to "J’ai lu et j’accepte le contrat de licence utilisateur.",
+        "Continue" to "Continuer",
+        "Accept & continue" to "Accepter et continuer",
+        "MAIN MENU" to "MENU PRINCIPAL",
+        "Mimo Gass v1 · Your private AI workspace" to "Mimo Gass v1 · Votre espace IA privé",
+        "MIMO Brain" to "MIMO Brain",
+        "MIMO Studio" to "MIMO Studio",
+        "Chat, answers, writing and translation" to "Discussion, réponses, rédaction et traduction",
+        "Creative image generation tools" to "Outils de création d’images",
+        "READY" to "PRÊT",
+        "NOT INSTALLED" to "NON INSTALLÉ",
+        "Download MIMO Brain, then Studio" to "Télécharger MIMO Brain, puis Studio",
+        "Manage model files" to "Gérer les fichiers des modèles",
+        "Open conversation" to "Ouvrir la conversation",
+        "Settings" to "Paramètres",
+        "Save conversations" to "Enregistrer les conversations",
+        "Keep this chat on this device for your next visit" to "Conserver cette conversation sur cet appareil pour votre prochaine visite",
+        "Low · 2 GB" to "Faible · 2 Go",
+        "Medium · 4 GB" to "Moyen · 4 Go",
+        "Fort · 8 GB+" to "Fort · 8 Go+",
+        "🇬🇧 English" to "🇬🇧 Anglais",
+        "🇫🇷 Français" to "🇫🇷 Français",
+        "🇹🇳 العربية" to "🇹🇳 Arabe"
+    )
+    fun translate(value: String): String = phrases[value] ?: value
 }
 
 private data class MimoTheme(
@@ -370,6 +424,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
     CompositionLocalProvider(
         LocalMimoArabic provides language.startsWith("ar"),
+        LocalMimoLanguage provides(if (language == "fr") "fr" else if (language.startsWith("ar")) "ar" else "en"),
         LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
     ) {
     MaterialTheme(
