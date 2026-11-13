@@ -424,7 +424,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
     CompositionLocalProvider(
         LocalMimoArabic provides language.startsWith("ar"),
-        LocalMimoLanguage provides(if (language == "fr") "fr" else if (language.startsWith("ar")) "ar" else "en"),
+        LocalMimoLanguage provides (if (language == "fr") "fr" else if (language.startsWith("ar")) "ar" else "en"),
         LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
     ) {
     MaterialTheme(
@@ -1522,10 +1522,10 @@ private fun SetupBootScreen(
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { downloadConsentAccepted = false; showDownloadConsent = true },
-                enabled = !brainReady,
+                enabled = !studioReady,
                 colors = ButtonDefaults.buttonColors(containerColor = blue, contentColor = Color(0xFF061426))
             ) {
-                Text(if (downloadStarted) "Resume MIMO Brain download" else "Approve & download MIMO Brain · 2.5 GB", fontWeight = FontWeight.Bold)
+                Text(when { studioReady -> "Models installed"; brainReady -> "Resume MIMO Studio download"; downloadStarted -> "Resume MIMO Brain download"; else -> "Approve & download MIMO Brain · 2.5 GB" }, fontWeight = FontWeight.Bold)
             }
             Text("MIMO downloads Brain inside the app to private internal storage, resumes interrupted transfers, and verifies the file with SHA-256. Studio is optional.",
                 color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
