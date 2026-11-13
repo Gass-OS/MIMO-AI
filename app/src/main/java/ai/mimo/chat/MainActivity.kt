@@ -139,7 +139,7 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 
 @Composable
 private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
-    val messages = remember { mutableStateListOf(ChatMessage(MimoIdentity.chatGreeting, false)) }
+    val messages = remember { mutableStateListOf<ChatMessage>() }
     var input by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -155,7 +155,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 BrandMark(theme, 76)
                 Spacer(Modifier.height(18.dp))
-                Text("What can I help you with?", fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                Text(MimoIdentity.chatGreeting, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Color.White)
                 Text("Chat, explore ideas or create something amazing.", color = theme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(25.dp))
                 SuggestionChip("Explain something", Icons.Outlined.Lightbulb, theme) { input = "Explain something interesting to me" }
