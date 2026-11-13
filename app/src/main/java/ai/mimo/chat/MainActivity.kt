@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.Toast
 import android.speech.tts.TextToSpeech
 import java.util.Locale
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
