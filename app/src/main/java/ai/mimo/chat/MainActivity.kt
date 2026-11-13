@@ -770,6 +770,48 @@ private fun ChatScreen(
         prefs.edit().putString("active_chat_messages", array.toString()).apply()
     }
     var input by remember { mutableStateOf("") }
+    var historyOpen by remember { mutableStateOf(false) }
+    var savedChats by remember {
+        mutableStateOf(
+            try { org.json.JSONArray(prefs.getString("saved_chat_library", "[]")) }
+            catch (_: Exception) { org.json.JSONArray() }
+        )
+    }
+    fun encodeMessages(source: List<ChatMessage>): org.json.JSONArray {
+        val array = org.json.JSONArray()
+        source.forEach { array.put(org.json.JSONObject().put("text", it.text).put("fromUser", it.fromUser)) }
+        return array
+    }
+    fun archiveCurrentChat() {
+        if (messages.isEmpty()) return
+        val firstUserText = messages.firstOrNull { it.fromUser }?.text ?: "New conversation"
+        val title = firstUserText.take(42).ifBlank { "New conversation" }
+        val archive = org.json.JSONObject()
+            .put("id", System.currentTimeMillis().toString())
+            .put("title", title)
+            .put("savedAt", System.currentTimeMillis())
+            .put("messages", encodeMessages(messages))
+        val updated = org.json.JSONArray().put(archive)
+        for (i in 0 until savedChats.length()) updated.put(savedChats.getJSONObject(i))
+        while (updated.length() > 50) updated.remove(updated.length() - 1)
+        savedChats = updated
+        prefs.edit().putString("saved_chat_library", updated.toString()).putString("active_chat_messages", "[]").apply()
+    }
+    fun loadSavedChat(index: Int) {
+        archiveCurrentChat()
+        val chosen = savedChats.optJSONObject(index) ?: return
+        messages.clear()
+        val array = chosen.optJSONArray("messages") ?: org.json.JSONArray()
+        for (i in 0 until array.length()) {
+            val item = array.optJSONObject(i) ?: continue
+            messages.add(ChatMessage(item.optString("text"), item.optBoolean("fromUser")))
+        }
+        val updated = org.json.JSONArray()
+        for (i in 0 until savedChats.length()) if (i != index) updated.put(savedChats.getJSONObject(i))
+        savedChats = updated
+        prefs.edit().putString("saved_chat_library", updated.toString()).apply()
+        historyOpen = false
+    }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             BrandMark(theme, 42)
@@ -778,9 +820,15 @@ private fun ChatScreen(
                 Text("MIMO AI", fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = theme.accent)
                 Text("Your personal AI space", fontSize = 11.sp, color = theme.secondary)
             }
+            IconButton(onClick = { historyOpen = true }) { Icon(Icons.Outlined.History, "Chat history", tint = theme.secondary) }
+            IconButton(onClick = {
+                archiveCurrentChat()
+                messages.clear()
+                prefs.edit().putString("active_chat_messages", "[]").apply()
+            }) { Icon(Icons.Outlined.Add, "New chat", tint = theme.accent) }
             IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings", tint = theme.secondary) }
         }
-        if (downloadStarted && !studioVerified) {
+        if (downloadStarted && (!brainVerified || !studioVerified)) {
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 color = theme.surface.copy(alpha = 0.92f),
@@ -789,28 +837,54 @@ private fun ChatScreen(
             ) {
                 Column(Modifier.padding(horizontal = 13.dp, vertical = 10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.AutoAwesome, null, tint = theme.accent, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Outlined.CloudDownload, null, tint = theme.accent, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("MIMO Studio · image model", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                        Text(if (brainVerified) "${String.format(Locale.US, "%.2f", studioProgress.coerceIn(0f, 1f) * 100f)}%" else "Queued", color = theme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(if (!brainVerified) "MIMO Brain · chat model" else "MIMO Studio · image model", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        val activeProgress = if (!brainVerified) brainProgress else studioProgress
+                        Text("${String.format(Locale.US, "%.2f", activeProgress.coerceIn(0f, 1f) * 100f)}%", color = theme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(7.dp))
+                    val activeProgress = if (!brainVerified) brainProgress else studioProgress
                     LinearProgressIndicator(
-                        progress = { studioProgress.coerceIn(0f, 1f) },
+                        progress = { activeProgress.coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
                         color = theme.accent, trackColor = theme.background
                     )
+                    val activeBytes = if (!brainVerified) brainDownloadedBytes else studioDownloadedBytes
+                    val totalBytes = if (!brainVerified) brainTotalBytes else studioTotalBytes
                     Text(
                         when {
-                            !brainVerified -> "Waiting for MIMO Brain download to finish"
-                            studioTotalBytes > 0L -> "${formatModelBytes(studioDownloadedBytes)} / ${formatModelBytes(studioTotalBytes)} · $downloadStatus"
+                            totalBytes > 0L -> "${formatModelBytes(activeBytes)} / ${formatModelBytes(totalBytes)} · $downloadStatus"
                             else -> downloadStatus
                         },
                         color = theme.secondary, fontSize = 10.sp, lineHeight = 14.sp,
                         modifier = Modifier.padding(top = 6.dp)
                     )
+                    Text(if (!brainVerified) "MIMO Studio will start automatically after Brain is verified." else "Image model download continues while you chat.", color = theme.secondary, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
                 }
             }
+        }
+        if (historyOpen) {
+            AlertDialog(
+                onDismissRequest = { historyOpen = false },
+                title = { Text("Saved conversations", color = Color.White) },
+                text = {
+                    if (savedChats.length() == 0) Text("Your saved conversations will appear here.", color = theme.secondary)
+                    else Column(Modifier.heightIn(max = 360.dp)) {
+                        for (i in 0 until savedChats.length()) {
+                            val item = savedChats.optJSONObject(i) ?: continue
+                            Text(
+                                item.optString("title", "Conversation"),
+                                Modifier.fillMaxWidth().clickable { loadSavedChat(i) }.padding(vertical = 12.dp),
+                                color = Color.White, fontSize = 14.sp
+                            )
+                            if (i < savedChats.length() - 1) HorizontalDivider(color = theme.secondary.copy(alpha = 0.18f))
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { historyOpen = false }) { Text("Close") } },
+                containerColor = theme.surface
+            )
         }
         if (messages.isEmpty()) {
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
