@@ -69,7 +69,11 @@ class ModelInstaller(private val context: Context) {
         (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
         val ramGb = memory.totalMem / 1_073_741_824.0
         val cores = Runtime.getRuntime().availableProcessors()
-        return when { ramGb >= 10.0 && cores >= 8 -> "high"; ramGb < 6.0 -> "low"; else -> "medium" }
+        return when {
+            ramGb >= 8.0 && cores >= 8 -> "high"
+            ramGb < 2.0 || cores <= 2 -> "low"
+            else -> "medium"
+        }
     }
 
     fun deviceResources(): String {
@@ -80,9 +84,9 @@ class ModelInstaller(private val context: Context) {
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: Build.CPU_ABI
         val cores = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
         val tier = when {
-            ramGb >= 10.0 && cores >= 8 -> "High-performance"
-            ramGb >= 6.0 -> "Balanced"
-            else -> "Memory-saving"
+            ramGb >= 8.0 && cores >= 8 -> "Fort · 8 GB+"
+            ramGb < 2.0 || cores <= 2 -> "Low · 2 GB"
+            else -> "Medium · 4 GB"
         }
         return String.format(Locale.US, "%s device | %.1f GB RAM | %d CPU cores | %s | %.2f GB free app storage", tier, ramGb, cores, abi, freeGb)
     }
