@@ -38,6 +38,8 @@ jobs:
           sudo apt-get install -y glslc
       - name: Prepare pinned llama.cpp Android runtime
         run: bash libs/llama.kt/scripts/bootstrap.sh
+      - name: Disable unused OpenCL backend (CPU inference build)
+        run: python3 scripts/disable-opencl-android.py
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace --no-daemon --max-workers 2
       - name: Upload APK
