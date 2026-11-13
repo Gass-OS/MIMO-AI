@@ -263,6 +263,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
     var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
+    var showLanguagePicker by remember { mutableStateOf(!prefs.getBoolean("language_selected", prefs.getBoolean("welcome_seen", false))) }
     var language by remember { mutableStateOf(prefs.getString("language", "ar-TN") ?: "ar-TN") }
     var page by remember { mutableStateOf("setup") }
     var locationGranted by remember {
@@ -284,6 +285,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var showExitDialog by remember { mutableStateOf(false) }
     var brainProgress by remember { mutableFloatStateOf(0f) }
     var studioProgress by remember { mutableFloatStateOf(0f) }
+    var brainDownloadedBytes by remember { mutableLongStateOf(0L) }
+    var brainTotalBytes by remember { mutableLongStateOf(-1L) }
+    var studioDownloadedBytes by remember { mutableLongStateOf(0L) }
+    var studioTotalBytes by remember { mutableLongStateOf(-1L) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
     var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
@@ -417,7 +422,18 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     containerColor = theme.surface
                 )
             }
-            if (showWelcome) {
+            if (showLanguagePicker) {
+                FirstRunLanguageScreen(theme = theme, selected = language, onSelect = { selectedLanguage ->
+                    language = selectedLanguage
+                    prefs.edit().putString("language", selectedLanguage).putBoolean("language_selected", true).apply()
+                    tts.language = when (selectedLanguage) {
+                        "ar-TN" -> Locale("ar", "TN")
+                        "fr" -> Locale.FRENCH
+                        else -> Locale.ENGLISH
+                    }
+                    showLanguagePicker = false
+                })
+            } else if (showWelcome) {
                 WelcomeScreen(theme, onStart = {
                     prefs.edit().putBoolean("welcome_seen", true).apply()
                     showWelcome = false
@@ -554,6 +570,40 @@ private fun BrandMark(theme: MimoTheme, size: Int = 54) {
                 cap = androidx.compose.ui.graphics.StrokeCap.Round)
         }
     }
+}
+
+private fun FirstRunLanguageScreen(theme: MimoTheme, selected: String, onSelect: (String) -> Unit) {
+    Column(Modifier.fillMaxSize().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center) {
+        BrandMark(theme, 82)
+        Spacer(Modifier.height(20.dp))
+        Text("MIMO AI", color = theme.accent, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+        Spacer(Modifier.height(10.dp))
+        Text("Choose your language", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text("اختر لغتك  ·  Choisissez votre langue", color = theme.secondary, fontSize = 14.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(26.dp))
+        listOf(Triple("العربية · تونس", "ar-TN", "RTL"), Triple("Français", "fr", "FR"), Triple("English", "en", "EN")).forEach { item ->
+            val active = selected == item.second
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(16.dp))
+                .background(theme.surface).border(if (active) 2.dp else 1.dp,
+                    if (active) theme.accent else Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                .clickable { onSelect(item.second) }.padding(horizontal = 18.dp, vertical = 17.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(item.first, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text(item.third, color = theme.secondary, fontSize = 11.sp)
+                if (active) { Spacer(Modifier.width(8.dp)); Icon(Icons.Outlined.CheckCircle, null, tint = theme.accent) }
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("You can change this later in Settings.", color = theme.secondary, fontSize = 11.sp, textAlign = TextAlign.Center)
+    }
+}
+
+private fun formatModelBytes(bytes: Long): String {
+    if (bytes < 0L) return "Unknown"
+    val gb = bytes / 1_000_000_000.0
+    return if (gb >= 1.0) String.format(Locale.US, "%.2f GB", gb)
+    else String.format(Locale.US, "%.0f MB", bytes / 1_000_000.0)
 }
 
 @Composable
