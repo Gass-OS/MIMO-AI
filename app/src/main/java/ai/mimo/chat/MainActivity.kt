@@ -280,6 +280,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var autoSpeak by remember { mutableStateOf(prefs.getBoolean("auto_speak", false)) }
     var speechRate by remember { mutableFloatStateOf(prefs.getFloat("speech_rate", 1.0f)) }
     val installer = remember(context) { ModelInstaller(context) }
+    val localEngine = remember(context) { MimoLocalEngine(context) }
     var downloadStarted by remember { mutableStateOf(prefs.getBoolean("model_download_started", false)) }
     var downloadAttempt by remember { mutableIntStateOf(0) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -292,6 +293,8 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
     var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
+    var inferenceReady by remember { mutableStateOf(false) }
+    var inferenceStatus by remember { mutableStateOf("Checking installed MIMO Brain…") }
     var speechReady by remember { mutableStateOf(false) }
     val tts = remember(context) {
         TextToSpeech(context) { status -> speechReady = status == TextToSpeech.SUCCESS }
@@ -325,6 +328,26 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         }
     }
     val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
+
+    LaunchedEffect(brainVerified) {
+        inferenceReady = false
+        if (!brainVerified) {
+            inferenceStatus = "MIMO Brain is not verified yet. Finish the Brain installation first."
+        } else {
+            inferenceStatus = "Loading your existing MIMO Brain into the on-device engine…"
+            try {
+                localEngine.load()
+                inferenceReady = true
+                inferenceStatus = "Ready · running locally on this device"
+            } catch (error: Exception) {
+                inferenceStatus = "Local engine could not load Brain: ${error.message ?: error.javaClass.simpleName}"
+            }
+        }
+    }
+
+    DisposableEffect(localEngine) {
+        onDispose { localEngine.close() }
+    }
 
     LaunchedEffect(downloadStarted, downloadAttempt) {
         if (downloadStarted) {
@@ -540,7 +563,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                     catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
                 })
-                else -> ChatScreen(theme, prefs = prefs, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak, downloadStarted = downloadStarted, brainProgress = brainProgress, studioProgress = studioProgress, brainDownloadedBytes = brainDownloadedBytes, brainTotalBytes = brainTotalBytes, studioDownloadedBytes = studioDownloadedBytes, studioTotalBytes = studioTotalBytes, brainVerified = brainVerified, studioVerified = studioVerified, downloadStatus = installerStatus)
+                else -> ChatScreen(theme, prefs = prefs, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak, downloadStarted = downloadStarted, brainProgress = brainProgress, studioProgress = studioProgress, brainDownloadedBytes = brainDownloadedBytes, brainTotalBytes = brainTotalBytes, studioDownloadedBytes = studioDownloadedBytes, studioTotalBytes = studioTotalBytes, brainVerified = brainVerified, studioVerified = studioVerified, downloadStatus = installerStatus, engineReady = inferenceReady, engineStatus = inferenceStatus, onGenerate = { history, onToken -> localEngine.generate(history, onToken) })
             }
         }
     }
@@ -746,7 +769,10 @@ private fun ChatScreen(
     studioTotalBytes: Long,
     brainVerified: Boolean,
     studioVerified: Boolean,
-    downloadStatus: String
+    downloadStatus: String,
+    engineReady: Boolean,
+    engineStatus: String,
+    onGenerate: suspend (List<ChatMessage>, (String) -> Unit) -> Unit
 ) {
     val messages = remember {
         mutableStateListOf<ChatMessage>().apply {
@@ -770,6 +796,41 @@ private fun ChatScreen(
         prefs.edit().putString("active_chat_messages", array.toString()).apply()
     }
     var input by remember { mutableStateOf("") }
+    var generating by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    fun sendMessage() {
+        val prompt = input.trim()
+        if (prompt.isEmpty() || generating) return
+        if (!engineReady) {
+            messages.add(ChatMessage(engineStatus, false))
+            input = ""
+            return
+        }
+        messages.add(ChatMessage(prompt, true))
+        input = ""
+        val history = messages.toList()
+        messages.add(ChatMessage("", false))
+        val responseIndex = messages.lastIndex
+        generating = true
+        scope.launch {
+            try {
+                onGenerate(history) { token ->
+                    val current = messages.getOrNull(responseIndex)?.text.orEmpty()
+                    messages[responseIndex] = ChatMessage(current + token, false)
+                }
+                val answer = messages.getOrNull(responseIndex)?.text.orEmpty()
+                if (answer.isBlank()) {
+                    messages[responseIndex] = ChatMessage("MIMO could not generate a response. Please try again.", false)
+                } else if (autoSpeak) {
+                    onSpeak(answer)
+                }
+            } catch (error: Exception) {
+                messages[responseIndex] = ChatMessage("MIMO Brain error: ${error.message ?: error.javaClass.simpleName}", false)
+            } finally {
+                generating = false
+            }
+        }
+    }
     var historyOpen by remember { mutableStateOf(false) }
     var savedChats by remember {
         mutableStateOf(
@@ -936,16 +997,11 @@ private fun ChatScreen(
                     }
                 }
             )
-            IconButton(onClick = {
-                if (input.isNotBlank()) {
-                    messages.add(ChatMessage(input.trim(), true))
-                    messages.add(ChatMessage(MimoIdentity.previewReply, false))
-                    if (autoSpeak) onSpeak(MimoIdentity.previewReply)
-                    input = ""
-                }
-            }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
+            IconButton(onClick = { sendMessage() }, enabled = !generating) {
+                Icon(Icons.Outlined.Send, "Send", tint = if (generating) theme.secondary else theme.accent)
+            }
         }
-        Text(if (studioVerified) "MIMO Studio model verified · image runtime integration still required" else "MIMO preview · model downloads continue in the background", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text(if (inferenceReady) "MIMO Brain · running locally on this device · Studio image runtime is separate" else "MIMO Brain · $engineStatus", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
     }
 }
 
