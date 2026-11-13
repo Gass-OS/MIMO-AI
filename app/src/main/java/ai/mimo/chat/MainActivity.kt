@@ -289,10 +289,6 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var brainTotalBytes by remember { mutableLongStateOf(-1L) }
     var studioDownloadedBytes by remember { mutableLongStateOf(0L) }
     var studioTotalBytes by remember { mutableLongStateOf(-1L) }
-    var brainDownloadedBytes by remember { mutableLongStateOf(0L) }
-    var brainTotalBytes by remember { mutableLongStateOf(-1L) }
-    var studioDownloadedBytes by remember { mutableLongStateOf(0L) }
-    var studioTotalBytes by remember { mutableLongStateOf(-1L) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
     var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
