@@ -13,7 +13,9 @@ import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
@@ -61,6 +63,14 @@ class ModelInstaller(private val context: Context) {
     private fun partFile(model: Model) = File(modelFile(model).parentFile, model.fileName + ".part")
 
     fun availableBytes(): Long = StatFs(context.filesDir.absolutePath).availableBytes
+
+    fun recommendedPerformanceProfile(): String {
+        val memory = ActivityManager.MemoryInfo()
+        (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
+        val ramGb = memory.totalMem / 1_073_741_824.0
+        val cores = Runtime.getRuntime().availableProcessors()
+        return when { ramGb >= 10.0 && cores >= 8 -> "high"; ramGb < 6.0 -> "low"; else -> "medium" }
+    }
 
     fun deviceResources(): String {
         val memory = ActivityManager.MemoryInfo()
@@ -245,10 +255,11 @@ class ModelInstaller(private val context: Context) {
                 false
             }
         } catch (error: Exception) {
+            if (error is CancellationException) throw error
             val message = error.message ?: error.javaClass.simpleName
             val failed = Transfer(id, DownloadManager.STATUS_FAILED, partial.length(), -1L, 3)
             publish(failed, message)
-            onProgress(failed)
+            withContext(Dispatchers.Main) { onProgress(failed) }
             false
         }
     }
