@@ -1287,7 +1287,7 @@ private fun MainMenuScreen(
                         Text(item.first, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text(item.second, color = theme.secondary, fontSize = 11.sp)
                     }
-                    Text(if (item.third) "READY" else "NOT INSTALLED",
+                    Text(if (item.third) "VERIFIED" else "NOT INSTALLED",
                         color = if (item.third) Color(0xFF80D8A0) else theme.secondary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
             }
