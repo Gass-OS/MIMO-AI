@@ -1002,7 +1002,7 @@ private fun ChatScreen(
                 Icon(Icons.Outlined.Send, "Send", tint = if (generating) theme.secondary else theme.accent)
             }
         }
-        Text(if (inferenceReady) "MIMO Brain · running locally on this device · Studio image runtime is separate" else "MIMO Brain · $engineStatus", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text(if (engineReady) "MIMO Brain · running locally on this device · Studio image runtime is separate" else "MIMO Brain · $engineStatus", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
     }
 }
 
