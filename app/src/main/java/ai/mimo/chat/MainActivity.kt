@@ -1,8 +1,17 @@
 package ai.mimo.chat
 
+import android.Manifest
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -18,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,9 +80,34 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MimoApp(prefs: android.content.SharedPreferences) {
+    val context = LocalContext.current
     var themeId by remember { mutableStateOf(prefs.getString("theme", "blue") ?: "blue") }
     var showWelcome by remember { mutableStateOf(!prefs.getBoolean("welcome_seen", false)) }
     var page by remember { mutableStateOf("chat") }
+    var locationGranted by remember {
+        mutableStateOf(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+    }
+    var notificationsGranted by remember {
+        mutableStateOf(Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+    }
+    var selectedPhoto by remember { mutableStateOf(prefs.getString("reference_photo_uri", null)) }
+    var wifiOnly by remember { mutableStateOf(prefs.getBoolean("wifi_only", true)) }
+    val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        locationGranted = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        notificationsGranted = it
+    }
+    val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) { }
+            selectedPhoto = uri.toString()
+            prefs.edit().putString("reference_photo_uri", uri.toString()).apply()
+            Toast.makeText(context, "Reference image selected", Toast.LENGTH_SHORT).show()
+        }
+    }
     val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
 
     MaterialTheme(colorScheme = darkColorScheme(
@@ -89,15 +124,31 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     prefs.edit().putBoolean("welcome_seen", true).apply()
                     showWelcome = false
                 })
-            } else if (page == "settings") {
-                SettingsScreen(theme, themeId, onTheme = {
+            } else when (page) {
+                "settings" -> SettingsScreen(theme, themeId, wifiOnly, onWifiOnly = {
+                    wifiOnly = it
+                    prefs.edit().putBoolean("wifi_only", it).apply()
+                }, onTheme = {
                     themeId = it
                     prefs.edit().putString("theme", it).apply()
-                }, onBack = { page = "chat" }, onManageModels = { page = "models" })
-            } else if (page == "models") {
-                ModelManagerScreen(theme, onBack = { page = "settings" })
-            } else {
-                ChatScreen(theme, onSettings = { page = "settings" })
+                }, onBack = { page = "chat" }, onManageModels = { page = "models" },
+                    onPermissions = { page = "permissions" }, onAbout = { page = "about" }, onProjects = { page = "projects" })
+                "models" -> ModelManagerScreen(theme, onBack = { page = "settings" })
+                "permissions" -> PermissionsScreen(theme, locationGranted, notificationsGranted, selectedPhoto != null,
+                    onBack = { page = "settings" },
+                    onLocation = { locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)) },
+                    onNotifications = {
+                        if (Build.VERSION.SDK_INT >= 33) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else notificationsGranted = true
+                    },
+                    onPhoto = { photoLauncher.launch(ActivityResultContracts.PickVisualMedia.ImageOnly) },
+                    onAppSettings = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) })
+                "about" -> AboutScreen(theme, onBack = { page = "settings" })
+                "projects" -> ProjectsScreen(theme, onBack = { page = "settings" }, onOpen = { url ->
+                    try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                    catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
+                })
+                else -> ChatScreen(theme, onSettings = { page = "settings" })
             }
         }
     }
@@ -243,23 +294,23 @@ private fun SuggestionChip(label: String, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun SettingsScreen(theme: MimoTheme, selected: String, onTheme: (String) -> Unit, onBack: () -> Unit, onManageModels: () -> Unit) {
+private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean,
+    onWifiOnly: (Boolean) -> Unit, onTheme: (String) -> Unit, onBack: () -> Unit,
+    onManageModels: () -> Unit, onPermissions: () -> Unit, onAbout: () -> Unit, onProjects: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back", tint = theme.secondary) }
             Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
             item {
                 SettingsHeader("APPEARANCE", theme)
                 Text("Choose your MIMO style", color = theme.secondary, fontSize = 13.sp)
                 themes.forEach { item ->
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(16.dp))
-                            .background(item.surface).border(if (selected == item.id) 2.dp else 1.dp, if (selected == item.id) item.accent else Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
-                            .clickable { onTheme(item.id) }.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(16.dp))
+                        .background(item.surface).border(if (selected == item.id) 2.dp else 1.dp,
+                            if (selected == item.id) item.accent else Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+                        .clickable { onTheme(item.id) }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(32.dp).clip(CircleShape).background(item.background).border(2.dp, item.accent, CircleShape))
                         Spacer(Modifier.width(12.dp))
                         Text(item.title, Modifier.weight(1f), color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -268,35 +319,42 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, onTheme: (String)
                 }
             }
             item {
-                SettingsHeader("AI MODELS", theme)
-                SettingsRow(Icons.Outlined.Psychology, "Language model", "Not installed · source verification pending", theme)
-                SettingsRow(Icons.Outlined.Image, "Image generation", "Not installed · source verification pending", theme)
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).clickable(onClick = onManageModels).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Storage, null, tint = theme.accent)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Model Manager", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        Text("Storage, setup status and model downloads", color = theme.secondary, fontSize = 11.sp)
-                    }
-                    Icon(Icons.Outlined.ChevronRight, null, tint = theme.secondary)
-                }
+                SettingsHeader("AI & MODELS", theme)
+                SettingsRow(Icons.Outlined.Psychology, "Language engine", "Not installed · source verification pending", theme)
+                SettingsRow(Icons.Outlined.AutoAwesome, "Image engine", "Not installed · source verification pending", theme)
+                SettingsRow(Icons.Outlined.Storage, "Model Manager", "Manage setup and offline model files", theme, onManageModels)
+            }
+            item {
+                SettingsHeader("DEVICE & PERMISSIONS", theme)
+                SettingsRow(Icons.Outlined.MyLocation, "Location and GPS", "Permission controls and nearby-place support", theme, onPermissions)
+                SettingsRow(Icons.Outlined.NotificationsActive, "Notifications", "Choose whether MIMO may notify you", theme, onPermissions)
+                SettingsRow(Icons.Outlined.PhotoLibrary, "Reference pictures", "Select a picture with Android Photo Picker", theme, onPermissions)
+                SettingsRow(Icons.Outlined.Security, "App permissions", "Review Android permission settings", theme, onPermissions)
             }
             item {
                 SettingsHeader("PREFERENCES", theme)
-                SettingsRow(Icons.Outlined.Language, "Language", "English · more languages planned", theme)
-                SettingsRow(Icons.Outlined.Wifi, "Downloads", "Wi-Fi preference coming soon", theme)
-                SettingsRow(Icons.Outlined.Security, "Privacy", "Designed for on-device AI", theme)
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Wifi, null, tint = theme.accent, modifier = Modifier.size(23.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Wi-Fi only downloads", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Text("Avoid large model downloads on mobile data", color = theme.secondary, fontSize = 11.sp)
+                    }
+                    Switch(checked = wifiOnly, onCheckedChange = onWifiOnly)
+                }
+                SettingsRow(Icons.Outlined.Language, "Language", "English · language selector planned", theme)
+                SettingsRow(Icons.Outlined.BatteryFull, "Battery and performance", "AI engines will manage memory independently", theme)
             }
             item {
-                SettingsHeader("ABOUT", theme)
-                SettingsRow(Icons.Outlined.Info, "About MIMO AI", "Your AI. Your device. Your conversation.", theme)
-                SettingsRow(Icons.Outlined.Code, "Version", "0.1.0 · Early preview", theme)
-                Text("MIMO AI is an independent project. Model names and third-party components will be credited with their applicable licenses before release.", color = theme.secondary, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 8.dp))
+                SettingsHeader("ABOUT & PROJECTS", theme)
+                SettingsRow(Icons.Outlined.Info, "About MIMO AI", "Purpose, privacy and creator", theme, onAbout)
+                SettingsRow(Icons.Outlined.PhoneAndroid, "About this APK", "Version 0.1.0 · early preview build", theme, onAbout)
+                SettingsRow(Icons.Outlined.Code, "My Projects", "Explore apps and open-source work", theme, onProjects)
             }
         }
     }
 }
-
 
 @Composable
 private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
@@ -363,19 +421,142 @@ private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
     }
 }
 
+
+@Composable
+private fun PermissionsScreen(theme: MimoTheme, locationGranted: Boolean, notificationsGranted: Boolean,
+    photoSelected: Boolean, onBack: () -> Unit, onLocation: () -> Unit, onNotifications: () -> Unit,
+    onPhoto: () -> Unit, onAppSettings: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back", tint = theme.secondary) }
+            Text("Device permissions", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item {
+                Text("MIMO asks only when a feature needs access. You can change these choices in Android settings at any time.",
+                    color = theme.secondary, fontSize = 12.sp, lineHeight = 18.sp)
+            }
+            item {
+                PermissionCard(theme, Icons.Outlined.MyLocation, "Location while using MIMO",
+                    if (locationGranted) "Allowed" else "Not allowed",
+                    "Can provide your approximate or precise position for nearby hospitals and local context. GPS itself can work offline; place information needs downloaded data or internet.",
+                    if (locationGranted) "Permission granted" else "Allow location", onLocation, locationGranted)
+            }
+            item {
+                PermissionCard(theme, Icons.Outlined.NotificationsActive, "Notifications",
+                    if (notificationsGranted) "Allowed" else "Not allowed",
+                    "Used for download completion, model setup and important app alerts. MIMO does not need notification access to answer questions.",
+                    if (notificationsGranted) "Permission granted" else "Allow notifications", onNotifications, notificationsGranted)
+            }
+            item {
+                PermissionCard(theme, Icons.Outlined.PhotoLibrary, "Reference picture",
+                    if (photoSelected) "Picture selected" else "No picture selected",
+                    "Choose only the picture you want to share with MIMO. Android Photo Picker grants access to the selected item; broad storage permission is not required.",
+                    "Choose a picture", onPhoto, photoSelected)
+            }
+            item {
+                SettingsRow(Icons.Outlined.Settings, "Android app settings", "Manage all permissions and notifications", theme, onAppSettings)
+            }
+            item {
+                Text("Offline note: location can be read without internet after permission is granted. Nearby hospitals require an offline map/place database to be bundled or downloaded. Current weather requires a network connection or a previously cached forecast.",
+                    color = theme.secondary, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PermissionCard(theme: MimoTheme, icon: androidx.compose.ui.graphics.vector.ImageVector, title: String,
+    status: String, description: String, action: String, onClick: () -> Unit, granted: Boolean) {
+    Surface(color = theme.surface, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(15.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = theme.accent, modifier = Modifier.size(25.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(title, Modifier.weight(1f), color = Color.White, fontWeight = FontWeight.Bold)
+                Text(status, color = if (granted) Color(0xFF80D8A0) else theme.secondary, fontSize = 10.sp)
+            }
+            Text(description, color = theme.secondary, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 10.dp))
+            OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                Icon(if (granted) Icons.Outlined.Check else Icons.Outlined.Tune, null)
+                Spacer(Modifier.width(8.dp))
+                Text(action)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutScreen(theme: MimoTheme, onBack: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back", tint = theme.secondary) }
+            Text("About MIMO AI", fontSize = 23.sp, fontWeight = FontWeight.Bold)
+        }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item {
+                Surface(color = theme.surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        BrandMark(theme, 76)
+                        Text("MIMO AI", color = theme.accent, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 12.dp))
+                        Text("Your assistant. Your device. Your control.", color = theme.secondary, fontSize = 12.sp, textAlign = TextAlign.Center)
+                    }
+                }
+            }
+            item { SettingsHeader("ABOUT THE ASSISTANT", theme) }
+            item { SettingsRow(Icons.Outlined.Forum, "One conversation", "Chat and image creation are designed to live in the same conversation.", theme) }
+            item { SettingsRow(Icons.Outlined.OfflineBolt, "Offline-first", "The goal is local AI inference after models are installed. This preview does not yet contain connected AI engines.", theme) }
+            item { SettingsRow(Icons.Outlined.PrivacyTip, "Privacy", "Your prompts and selected pictures are intended to be processed on-device by local engines. Optional live services such as weather need internet.", theme) }
+            item { SettingsHeader("ABOUT THIS APK", theme) }
+            item { SettingsRow(Icons.Outlined.Android, "Application", "MIMO AI · package ai.mimo.chat", theme) }
+            item { SettingsRow(Icons.Outlined.Tag, "Version", "0.1.0 · development preview", theme) }
+            item { SettingsRow(Icons.Outlined.Build, "Build", "Android native app · Kotlin and Jetpack Compose", theme) }
+            item { SettingsHeader("CREATOR", theme) }
+            item { SettingsRow(Icons.Outlined.Person, "Created by", "Aymen Gharsalli", theme) }
+            item { SettingsRow(Icons.Outlined.Place, "Project origin", "Kasserine, Tunisia", theme) }
+            item { Text("Independent project. Third-party model and component credits will be published with their applicable licenses before distribution.", color = theme.secondary, fontSize = 11.sp, lineHeight = 16.sp) }
+        }
+    }
+}
+
+@Composable
+private fun ProjectsScreen(theme: MimoTheme, onBack: () -> Unit, onOpen: (String) -> Unit) {
+    val projects = listOf(
+        Triple("GASS-JOBS / TUN-JOBS", "Job matching and recruitment for Tunisia", "https://github.com/Gass-OS/GASS-JOBS"),
+        Triple("Kasserine City", "A 3D mobile world inspired by Kasserine", "https://github.com/Gass-OS/Kasserine-City"),
+        Triple("Phantom Ops", "A mobile action game project", "https://github.com/Gass-OS/Phantom-Ops"),
+        Triple("GassNative", "Linux-on-Android environment without root", "https://github.com/Gass-OS/GassNative-"),
+        Triple("WINE-HUB", "Android project for Windows app compatibility workflows", "https://github.com/Gass-OS/WINE-HUB"),
+        Triple("Long Night", "A story-driven Godot game project", "https://github.com/Gass-OS/long-night")
+    )
+    Column(Modifier.fillMaxSize().padding(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back", tint = theme.secondary) }
+            Text("My Projects", fontSize = 23.sp, fontWeight = FontWeight.Bold)
+        }
+        Text("More work from the Gass-OS project space.", color = theme.secondary, fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+            items(projects) { project ->
+                SettingsRow(Icons.Outlined.Code, project.first, project.second, theme) { onOpen(project.third) }
+            }
+        }
+    }
+}
+
 @Composable
 private fun SettingsHeader(label: String, theme: MimoTheme) {
     Text(label, Modifier.padding(top = 14.dp, bottom = 8.dp), color = theme.accent, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.5.sp)
 }
 
 @Composable
-private fun SettingsRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, theme: MimoTheme) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun SettingsRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, theme: MimoTheme, onClick: (() -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).background(theme.surface.copy(alpha = 0.72f)).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = theme.accent, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(13.dp))
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(title, color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
             Text(subtitle, color = theme.secondary, fontSize = 11.sp)
         }
+        if (onClick != null) Icon(Icons.Outlined.ChevronRight, null, tint = theme.secondary, modifier = Modifier.size(18.dp))
     }
 }
