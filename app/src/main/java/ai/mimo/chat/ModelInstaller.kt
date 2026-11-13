@@ -94,13 +94,25 @@ class ModelInstaller(private val context: Context) {
         val hasInternet = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) }
         val hasWifi = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) }
         val hasCellular = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
-        if (wifiOnly && !hasWifi) {
-            return false to if (hasCellular) "Wi-Fi only is ON | mobile data detected but blocked. Turn Wi-Fi only OFF to use mobile data." else "Wi-Fi only is ON | no Wi-Fi network detected. Connect to Wi-Fi or turn Wi-Fi only OFF."
+        // Respect the explicit Wi-Fi-only preference when Android positively identifies
+        // a cellular route. Do not reject a connection merely because Android's
+        // capability snapshot is incomplete (VPNs, captive portals and OEM network
+        // reporting can temporarily hide INTERNET/VALIDATED). Let the HTTPS request
+        // be the final connectivity test so MIMO never waits forever at 0%.
+        if (wifiOnly && !hasWifi && hasCellular) {
+            return false to "Wi-Fi only is ON | mobile data detected but blocked. Turn Wi-Fi only OFF to use mobile data."
         }
-        if (!hasInternet) return false to "No internet-capable network detected. Check Wi-Fi or mobile data."
-        val transport = if (hasWifi) "Wi-Fi" else if (hasCellular) "Mobile data" else "Network"
+        val transport = when {
+            hasWifi -> "Wi-Fi"
+            hasCellular -> "Mobile data"
+            else -> "Network"
+        }
         val validated = caps.any { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) }
-        return true to if (validated) "$transport connected | checking model source..." else "$transport detected | Android has not validated internet access yet; checking connection..."
+        return true to when {
+            !hasInternet -> "Android network status is incomplete | testing the secure model connection directly..."
+            !validated -> "$transport detected | testing the secure model connection directly..."
+            else -> "$transport connected | contacting the model server..."
+        }
     }
 
     // The first model needs about 2.5 GB plus temporary/metadata headroom.
