@@ -84,6 +84,27 @@ private object MimoArabic {
         "Permissions and setup" to "الأذونات والإعداد",
         "I have read and accept the Privacy Policy." to "قرأت سياسة الخصوصية وأوافق عليها.",
         "I have read and accept the User Licence Agreement." to "قرأت اتفاقية ترخيص المستخدم وأوافق عليها.",
+        "MIMO is designed for on-device AI. Your conversations and selected pictures are intended to stay in this app and are not sent to model repositories when downloading model files. Network features you choose, such as live information, may send the minimum request data needed to their providers. You control permissions and can clear saved conversations in Settings." to "صُمّم ميمو لمعالجة الذكاء الاصطناعي على جهازك. من المفترض أن تبقى محادثاتك وصورك المختارة داخل التطبيق، ولا تُرسل إلى مستودعات النماذج أثناء التنزيل. قد ترسل ميزات الشبكة التي تختارها، مثل المعلومات المباشرة، الحد الأدنى من بيانات الطلب إلى مزوّديها. يمكنك التحكم في الأذونات ومسح المحادثات المحفوظة من الإعدادات.",
+        "MIMO AI is an independent application. You may use it for lawful personal and professional purposes. You remain responsible for prompts and generated content and must respect third-party rights. Model weights and third-party components remain subject to their own licences. The app is provided as-is during development; availability and accuracy are not guaranteed. You may stop using MIMO and clear locally saved conversations at any time." to "ميمو AI تطبيق مستقل. يمكنك استخدامه للأغراض الشخصية والمهنية المشروعة. تتحمل مسؤولية طلباتك والمحتوى المُنشأ، ويجب احترام حقوق الأطراف الأخرى. تظل أوزان النماذج والمكوّنات الخارجية خاضعة لتراخيصها الخاصة. يُقدَّم التطبيق كما هو أثناء التطوير دون ضمان التوفر أو الدقة. يمكنك التوقف عن استخدام ميمو ومسح المحادثات المحفوظة محلياً في أي وقت.",
+        "Internet access is required for model downloads. Notifications are optional. Photos, microphone, camera and location are requested only when you use a feature that needs them." to "يلزم الاتصال بالإنترنت لتنزيل النماذج. الإشعارات اختيارية. لا نطلب الوصول إلى الصور أو الميكروفون أو الكاميرا أو الموقع إلا عند استخدام ميزة تحتاج إليها.",
+        "MIMO Brain powers chat, answers and writing. MIMO Studio is designed for image creation. You choose when to download each large model." to "يوفّر عقل ميمو المحادثة والإجابات والكتابة. صُمّم استوديو ميمو لإنشاء الصور. أنت تختار وقت تنزيل كل نموذج كبير.",
+        "MAIN MENU" to "القائمة الرئيسية",
+        "Mimo Gass v1 · Your private AI workspace" to "Mimo Gass v1 · مساحة الذكاء الاصطناعي الخاصة بك",
+        "Chat, answers, writing and translation" to "المحادثة والإجابات والكتابة والترجمة",
+        "Creative image generation tools" to "أدوات إنشاء الصور الإبداعية",
+        "Download MIMO Brain, then Studio" to "تنزيل عقل ميمو ثم الاستوديو",
+        "Open conversation" to "افتح المحادثة",
+        "Save conversations" to "حفظ المحادثات",
+        "Keep this chat on this device for your next visit" to "احتفظ بهذه المحادثة على هذا الجهاز لزيارتك القادمة",
+        "Low · 2 GB" to "منخفض · 2 جيجابايت",
+        "Medium · 4 GB" to "متوسط · 4 جيجابايت",
+        "Fort · 8 GB+" to "قوي · 8 جيجابايت+",
+        "Better answers · State your goal, give context and specify the format you want." to "إجابات أفضل · حدّد هدفك وقدّم السياق والشكل الذي تريده للإجابة.",
+        "Privacy · Never include passwords, payment details or sensitive personal data in prompts." to "الخصوصية · لا تضع كلمات المرور أو بيانات الدفع أو المعلومات الشخصية الحساسة في طلباتك.",
+        "Storage · Keep enough free internal space for large model files and temporary downloads." to "التخزين · اترك مساحة داخلية كافية لملفات النماذج الكبيرة والتنزيلات المؤقتة.",
+        "Offline use · Supported features can work locally after their runtime engines are integrated." to "العمل دون إنترنت · يمكن للميزات المدعومة العمل محلياً بعد دمج محركات التشغيل.",
+        "Image prompts · Describe lighting, style, composition and important details." to "وصف الصور · اشرح الإضاءة والأسلوب والتكوين والتفاصيل المهمة.",
+        "Battery care · Choose Low mode if your phone gets hot or the battery is running low." to "الحفاظ على البطارية · اختر الوضع المنخفض إذا ارتفعت حرارة الهاتف أو انخفض شحن البطارية."
         "Continue" to "متابعة",
         "Accept & continue" to "أوافق وأتابع",
         "🇬🇧 English" to "🇬🇧 الإنجليزية",
@@ -517,9 +538,9 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 }, language = language, onLanguage = {
                     language = it
                     prefs.edit().putString("language", it).apply()
-                    val locale = if (it.startsWith("ar")) Locale("ar", "TN") else Locale.ENGLISH
+                    val locale = when { it.startsWith("ar") -> Locale("ar", "TN"); it == "fr" -> Locale.FRENCH; else -> Locale.ENGLISH }
                     tts.language = locale
-                }, onBack = { page = "chat" }, onManageModels = { page = "models" },
+                }, onBack = { page = "home" }, onManageModels = { page = "models" },
                     onPermissions = { page = "permissions" }, onAbout = { page = "about" }, onProjects = { page = "projects" })
                 "setup" -> SetupBootScreen(
                     theme = theme,
