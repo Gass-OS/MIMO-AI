@@ -268,7 +268,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var showWelcome by remember { mutableStateOf(!prefs.getBoolean("license_accepted", false)) }
     var showLanguagePicker by remember { mutableStateOf(false) }
     var language by remember { mutableStateOf(prefs.getString("language", when (Locale.getDefault().language) { "ar" -> "ar-TN"; "fr" -> "fr"; else -> "en" }) ?: "en") }
-    var page by remember { mutableStateOf("setup") }
+    var page by remember { mutableStateOf("home") }
     var locationGranted by remember {
         mutableStateOf(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
@@ -346,6 +346,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
             brainDownloadedBytes = state.getLong("brain_downloaded", 0L)
             brainTotalBytes = state.getLong("brain_total", -1L)
             brainProgress = if (brainTotalBytes > 0L) (brainDownloadedBytes.toFloat() / brainTotalBytes).coerceIn(0f, 1f) else 0f
+            studioDownloadedBytes = state.getLong("studio_downloaded", 0L)
+            studioTotalBytes = state.getLong("studio_total", -1L)
+            studioProgress = if (studioTotalBytes > 0L) (studioDownloadedBytes.toFloat() / studioTotalBytes).coerceIn(0f, 1f) else 0f
+            studioVerified = installer.isVerified(ModelInstaller.Model.STUDIO)
             installerStatus = state.getString("status", installerStatus) ?: installerStatus
             if (brainVerified) brainProgress = 1f
             kotlinx.coroutines.delay(900)
@@ -356,7 +360,8 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         when {
             showLanguagePicker -> { showLanguagePicker = false; page = "chat" }
             showWelcome -> { showExitDialog = true }
-            page == "settings" || page == "setup" -> { page = "chat"; showExitDialog = false }
+            page == "settings" || page == "setup" -> { page = "home"; showExitDialog = false }
+            page == "home" -> { showExitDialog = true }
             page == "models" || page == "permissions" || page == "about" || page == "projects" -> {
                 page = "settings"; showExitDialog = false
             }
@@ -428,9 +433,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 }, onStart = {
                     prefs.edit().putBoolean("license_accepted", true).putBoolean("welcome_seen", true).apply()
                     showWelcome = false
-                    page = "setup"
+                    page = "home"
                 })
             } else when (page) {
+                "home" -> MainMenuScreen(theme, brainVerified, studioVerified,
+                    onSetup = { page = "setup" }, onChat = { page = "chat" }, onSettings = { page = "settings" })
                 "settings" -> SettingsScreen(theme, themeId, wifiOnly, performanceId, speechEnabled, autoSpeak, speechRate, saveConversations,
                     onSaveConversations = { saveConversations = it; prefs.edit().putBoolean("save_conversations", it).apply() },
                     onWifiOnly = {
@@ -461,6 +468,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     onPermissions = { page = "permissions" }, onAbout = { page = "about" }, onProjects = { page = "projects" })
                 "setup" -> SetupBootScreen(
                     theme = theme,
+                    onBack = { page = "home" },
                     brainProgress = brainProgress,
                     studioProgress = studioProgress,
                     brainDownloadedBytes = brainDownloadedBytes,
@@ -1168,8 +1176,67 @@ private fun SettingsRow(icon: androidx.compose.ui.graphics.vector.ImageVector, t
 
 
 @Composable
+private fun MainMenuScreen(
+    theme: MimoTheme,
+    brainReady: Boolean,
+    studioReady: Boolean,
+    onSetup: () -> Unit,
+    onChat: () -> Unit,
+    onSettings: () -> Unit
+) {
+    Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings", tint = theme.secondary) }
+        }
+        BrandMark(theme, 86)
+        Spacer(Modifier.height(14.dp))
+        Text("MIMO AI", color = theme.accent, fontSize = 30.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+        Text("Mimo Gass v1 · Your private AI workspace", color = theme.secondary, fontSize = 12.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(28.dp))
+        Text("MAIN MENU", color = theme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Spacer(Modifier.height(14.dp))
+        listOf(
+            Triple("MIMO Brain", "Chat, answers, writing and translation", brainReady),
+            Triple("MIMO Studio", "Creative image generation tools", studioReady)
+        ).forEachIndexed { index, item ->
+            Surface(color = theme.surface, shape = RoundedCornerShape(20.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, theme.accent.copy(alpha = 0.22f)),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(if (index == 0) Icons.Outlined.Psychology else Icons.Outlined.AutoAwesome, null,
+                        tint = theme.accent, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(item.first, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(item.second, color = theme.secondary, fontSize = 11.sp)
+                    }
+                    Text(if (item.third) "READY" else "NOT INSTALLED",
+                        color = if (item.third) Color(0xFF80D8A0) else theme.secondary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Button(onClick = onSetup, modifier = Modifier.fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(16.dp)) {
+            Icon(Icons.Outlined.CloudDownload, null)
+            Spacer(Modifier.width(9.dp))
+            Text(if (brainReady && studioReady) "Manage model files" else "Download MIMO Brain, then Studio", fontWeight = FontWeight.Bold)
+        }
+        OutlinedButton(onClick = onChat, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            Icon(Icons.Outlined.Forum, null)
+            Spacer(Modifier.width(8.dp))
+            Text("Open conversation")
+        }
+        Text("Model files are stored in MIMO's private app storage and verified before use.",
+            color = theme.secondary, fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 14.dp))
+    }
+}
+
+@Composable
 private fun SetupBootScreen(
     theme: MimoTheme,
+    onBack: () -> Unit,
     brainProgress: Float,
     studioProgress: Float,
     brainDownloadedBytes: Long,
@@ -1188,22 +1255,28 @@ private fun SetupBootScreen(
 ) {
     val tips = when (language) {
         "ar-TN" -> listOf(
-            "نصيحة · يمكنك طلب الشرح والترجمة والتلخيص والمساعدة في الكتابة من ميمو.",
-            "الخصوصية · بعد الإعداد، تتم معالجة مهام الذكاء الاصطناعي المدعومة على جهازك.",
-            "معلومة · أبقِ ميمو مفتوحاً ومتصلًا بالواي فاي أثناء التنزيل الأول.",
-            "إعداد ذكي · يتم تجهيز ميمو Brain أولاً، ثم تنزيل أدوات الإبداع."
+            "صياغة أفضل · اذكر الهدف والسياق والشكل الذي تريد أن تكون عليه الإجابة.",
+            "خصوصية · لا تضع كلمات المرور أو البيانات البنكية أو المعلومات الحساسة في المطالبات.",
+            "إدارة الذاكرة · اترك مساحة تخزين كافية قبل تنزيل ملفات النماذج الكبيرة.",
+            "استخدام محلي · بعد دمج محركات التشغيل، يمكن للميزات المدعومة العمل دون اتصال.",
+            "جودة الصور · صف الإضاءة والأسلوب والتكوين والتفاصيل للحصول على نتيجة أدق.",
+            "توفير الطاقة · استخدم وضع Low عند ارتفاع حرارة الجهاز أو انخفاض البطارية."
         )
         "fr" -> listOf(
-            "Conseil · Demandez à MIMO d’expliquer, traduire, résumer ou vous aider à écrire.",
-            "Confidentialité · Après la configuration, les fonctions prises en charge sont conçues pour fonctionner sur votre appareil.",
-            "À savoir · Gardez MIMO ouvert et connecté au Wi-Fi pendant le premier téléchargement.",
-            "Configuration intelligente · MIMO prépare d’abord Brain, puis télécharge les outils créatifs."
+            "Meilleures réponses · Précisez votre objectif, le contexte et le format attendu.",
+            "Confidentialité · N’incluez jamais de mots de passe ni de données bancaires dans vos demandes.",
+            "Stockage · Gardez suffisamment d’espace libre pour les fichiers volumineux des modèles.",
+            "Mode local · Les fonctions prises en charge pourront fonctionner hors ligne après l’intégration du moteur.",
+            "Images · Décrivez la lumière, le style, la composition et les détails souhaités.",
+            "Économie d’énergie · Choisissez Low si le téléphone chauffe ou si la batterie est faible."
         )
         else -> listOf(
-            "Tip · Ask MIMO to explain, translate, summarize and help you write.",
-            "Privacy · After setup, supported AI features are designed to run on your device.",
-            "Good to know · Keep MIMO open and connected to Wi-Fi during the first download.",
-            "Smart setup · MIMO prepares Brain first, then downloads the creative tools."
+            "Better answers · State your goal, give context and specify the format you want.",
+            "Privacy · Never include passwords, payment details or sensitive personal data in prompts.",
+            "Storage · Keep enough free internal space for large model files and temporary downloads.",
+            "Offline use · Supported features can work locally after their runtime engines are integrated.",
+            "Image prompts · Describe lighting, style, composition and important details.",
+            "Battery care · Choose Low mode if your phone gets hot or the battery is running low."
         )
     }
     var tipIndex by remember { mutableIntStateOf(0) }
@@ -1240,7 +1313,8 @@ private fun SetupBootScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back to main menu", tint = blue) }
                 Box {
                     IconButton(onClick = { languageMenuExpanded = true }) {
                         Icon(Icons.Outlined.MoreVert, contentDescription = "Language menu", tint = blue)
@@ -1255,7 +1329,7 @@ private fun SetupBootScreen(
             BrandMark(theme.copy(accent = blue, surface = Color(0xFF102A49)), 82)
             Spacer(Modifier.height(18.dp))
             Text("MIMO AI", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            Text("INITIALIZING YOUR PRIVATE AI", color = blue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            Text("MIMO GASS V1 · MODEL INSTALLER", color = blue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Spacer(Modifier.height(34.dp))
             Text(
                 if (brainReady) "MIMO Brain file verified" else "Preparing MIMO Brain",
