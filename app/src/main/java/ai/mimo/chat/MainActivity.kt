@@ -88,7 +88,7 @@ private object MimoArabic {
         "Model Manager" to "إدارة الملفات", "Manage setup and offline model files" to "إدارة الإعداد والملفات اللازمة للعمل دون إنترنت",
         "Device permissions" to "أذونات الجهاز", "About MIMO AI" to "حول ميمو AI", "My Projects" to "مشاريعي",
         "Prepare MIMO for offline use" to "جهّز ميمو للعمل دون إنترنت", "Not installed" to "غير مثبّت",
-        "Waiting for a verified download source" to "في انتظار مصدر تنزيل موثوق", "MIMO Brain" to "عقل ميمو",
+        "Ready to download inside MIMO" to "في انتظار مصدر تنزيل موثوق", "MIMO Brain" to "عقل ميمو",
         "MIMO Studio" to "استوديو ميمو", "READY" to "جاهز", "QUEUED" to "في الانتظار",
         "SETUP PROGRESS" to "تقدّم الإعداد", "FIRST SETUP · ABOUT 10 GB TOTAL" to "الإعداد الأول · حوالي 10 جيجابايت",
         "Continue to preview" to "المتابعة إلى المعاينة", "INITIALIZING YOUR PRIVATE AI" to "جارٍ تجهيز مساعدك الذكي الخاص",
@@ -97,7 +97,7 @@ private object MimoArabic {
         "MIMO's creative studio — turns your text descriptions and ideas into original pictures." to "استوديو ميمو الإبداعي — يحوّل وصفك وأفكارك المكتوبة إلى صور أصلية.",
         "Chat engine verified" to "تم التحقق من محرك المحادثة", "Starts after MIMO Brain is ready" to "يبدأ بعد جاهزية عقل ميمو",
         "Actual verified progress" to "التقدّم الفعلي بعد التحقق", "Chat available · Studio continues" to "المحادثة متاحة · ويستمر الاستوديو",
-        "This screen is ready for live installer progress. Downloads and engine verification are not connected in this build yet." to "هذه الشاشة جاهزة لعرض تقدّم التنزيل الفعلي. خدمة التنزيل والتحقق من المحركات غير مفعّلة في هذا الإصدار التجريبي بعد.",
+        "MIMO downloads directly inside the app. Model files are verified before setup is marked complete." to "هذه الشاشة جاهزة لعرض تقدّم التنزيل الفعلي. خدمة التنزيل والتحقق من المحركات غير مفعّلة في هذا الإصدار التجريبي بعد.",
         "Your assistant is getting ready." to "مساعدك يستعدّ للعمل.",
         "Android speech engine is not ready. Check Text-to-speech settings." to "محرك النطق في أندرويد غير جاهز. تحقّق من إعدادات تحويل النص إلى كلام.",
         "Reference image selected" to "تم اختيار الصورة المرجعية",
@@ -152,8 +152,8 @@ private object MimoArabic {
         "Thanks for your message! I'm still being connected to my on-device AI engine. This preview can show the interface, but real AI replies aren't available yet." to "شكراً على رسالتك! ما زلنا نربط محرك الذكاء الاصطناعي على الجهاز. هذه معاينة للواجهة، والردود الذكية الفعلية غير متاحة بعد.",
         "I'm getting my creative tools ready. Image creation isn't available in this preview yet." to "أجهّز أدواتي الإبداعية. إنشاء الصور غير متاح في هذه المعاينة بعد.",
         "Large downloads require your approval. Wi-Fi only is enabled by default." to "التنزيلات كبيرة وتتطلب موافقتك. التنزيل عبر Wi‑Fi فقط مفعّل افتراضياً.",
-        "At least 15 GB of free storage is required before starting these downloads." to "يلزم توفير 15 جيجابايت على الأقل قبل بدء التنزيل.",
-        "At least 15 GB of free storage is required. Free up space and try again." to "يلزم توفير 15 جيجابايت على الأقل. أفرغ بعض المساحة ثم أعد المحاولة.",
+        "At least 3 GB of free internal app storage is required before starting MIMO Brain." to "يلزم توفير 15 جيجابايت على الأقل قبل بدء التنزيل.",
+        "At least 3 GB of free internal app storage is required. Free up space and try again." to "يلزم توفير 15 جيجابايت على الأقل. أفرغ بعض المساحة ثم أعد المحاولة.",
         "Downloading MIMO Brain…" to "جارٍ تنزيل عقل ميمو…",
         "MIMO Brain · " to "عقل ميمو · ",
         "MIMO Brain download failed. Check your connection and try again." to "فشل تنزيل عقل ميمو. تحقّق من الاتصال ثم أعد المحاولة.",
@@ -171,7 +171,7 @@ private object MimoArabic {
         "Model file verified · image runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك الصور ما زال مطلوباً",
         "Starts after MIMO Brain is verified" to "يبدأ بعد التحقق من عقل ميمو",
         "Resume / retry downloads" to "استئناف / إعادة التنزيل", "Start downloads · about 9.5 GB" to "بدء التنزيل · حوالي 9.5 جيجابايت",
-        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل.",
+        "Downloads run inside MIMO into private internal app storage, resume partial transfers when you retry, and are SHA-256 verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل.",
         "Welcome to MIMO AI" to "مرحباً بك في ميمو AI",
         "One assistant. Two creative tools." to "مساعد واحد وأداتان للإبداع",
         "Your privacy matters" to "خصوصيتك تهمّنا",
@@ -188,7 +188,7 @@ private object MimoArabic {
         "The first setup downloads about 9.5 GB in total:" to "يتطلب الإعداد الأول تنزيل حوالي 9.5 جيجابايت:",
         "• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB" to "• عقل ميمو · Qwen3 4B Q4_K_M · حوالي 2.5 جيجابايت",
         "• MIMO Studio · SDXL 1.0 · about 6.94 GB" to "• استوديو ميمو · SDXL 1.0 · حوالي 6.94 جيجابايت",
-        "Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup." to "سيتم تنزيل الملفات بالتتابع والتحقق منها باستخدام SHA-256 قبل اعتمادها. يرجى توفير 15 جيجابايت على الأقل.",
+        "Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 3 GB free for Brain; MIMO Studio checks its larger storage requirement before downloading." to "سيتم تنزيل الملفات بالتتابع والتحقق منها باستخدام SHA-256 قبل اعتمادها. يرجى توفير 15 جيجابايت على الأقل.",
         "Wi-Fi only is ON. Downloads will wait for Wi-Fi." to "التنزيل عبر Wi‑Fi فقط مفعّل. سينتظر التنزيل توفر شبكة Wi‑Fi.",
         "Mobile data is allowed. Your carrier may charge data fees." to "بيانات الهاتف مسموحة. قد تُحتسب رسوم من شركة الاتصالات.",
         "I approve downloading these large model files to this device." to "أوافق على تنزيل ملفات النماذج الكبيرة إلى هذا الجهاز.",
@@ -330,7 +330,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         if (downloadStarted) {
             try {
                 if (!installer.hasRequiredSpace()) {
-                    installerStatus = "At least 15 GB of free storage is required before starting these downloads."
+                    installerStatus = "At least 3 GB of free internal app storage is required before starting MIMO Brain."
                     return@LaunchedEffect
                 }
                 if (!brainVerified) {
@@ -341,7 +341,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                             brainTotalBytes = transfer.totalBytes
                             if (transfer.totalBytes > 0L) {
                                 brainProgress = transfer.progress
-                                installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
+                                installerStatus = "MIMO Brain · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
                             } else {
                                 installerStatus = when (transfer.status) {
                                     android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
@@ -369,7 +369,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                             studioTotalBytes = transfer.totalBytes
                             if (transfer.totalBytes > 0L) {
                                 studioProgress = transfer.progress
-                                installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
+                                installerStatus = "MIMO Studio · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
                             } else {
                                 installerStatus = when (transfer.status) {
                                     android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
@@ -508,7 +508,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     },
                     onStartDownloads = {
                         if (!installer.hasRequiredSpace()) {
-                            installerStatus = "At least 15 GB of free storage is required. Free up space and try again."
+                            installerStatus = "At least 3 GB of free internal app storage is required. Free up space and try again."
                         } else {
                             prefs.edit().putBoolean("model_download_started", true).apply()
                             downloadStarted = true
@@ -961,7 +961,7 @@ private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
                         }
                         Spacer(Modifier.height(14.dp))
                         LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth(), color = theme.accent, trackColor = theme.background)
-                        Text("Waiting for a verified download source", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
+                        Text("Ready to download inside MIMO", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
                     }
                 }
             }
@@ -981,7 +981,7 @@ private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
                         }
                         Spacer(Modifier.height(14.dp))
                         LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth(), color = theme.accent, trackColor = theme.background)
-                        Text("Waiting for a verified download source", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
+                        Text("Ready to download inside MIMO", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
                     }
                 }
             }
@@ -1272,7 +1272,7 @@ private fun SetupBootScreen(
                     }
                     Text(
                         if (brainReady) "Model file verified · chat runtime integration pending"
-                        else if (downloadStarted && brainTotalBytes <= 0L) "Received ${formatModelBytes(brainDownloadedBytes)} · waiting for server file-size information or first data"
+                        else if (downloadStarted && brainTotalBytes <= 0L) "Received ${formatModelBytes(brainDownloadedBytes)} · waiting for the server response or first data"
                         else if (downloadStarted) "${formatModelBytes(brainDownloadedBytes)} / ${formatModelBytes(brainTotalBytes)} received"
                         else "Ready when you approve the download",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
@@ -1301,7 +1301,7 @@ private fun SetupBootScreen(
                     }
                     Text(
                         if (studioReady) "Model file verified · image runtime integration pending"
-                        else if (brainReady && downloadStarted && studioTotalBytes <= 0L) "Received ${formatModelBytes(studioDownloadedBytes)} · waiting for server file-size information or first data"
+                        else if (brainReady && downloadStarted && studioTotalBytes <= 0L) "Received ${formatModelBytes(studioDownloadedBytes)} · waiting for the server response or first data"
                         else if (brainReady && downloadStarted) "${formatModelBytes(studioDownloadedBytes)} / ${formatModelBytes(studioTotalBytes)} received"
                         else if (brainReady) "MIMO Studio download is next"
                         else "Starts after MIMO Brain is verified",
@@ -1372,7 +1372,7 @@ private fun SetupBootScreen(
             ) {
                 Text(if (downloadStarted) "Resume / retry downloads" else "Review & download · about 9.5 GB", fontWeight = FontWeight.Bold)
             }
-            Text("Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
+            Text("Downloads run inside MIMO into private internal app storage, resume partial transfers when you retry, and are SHA-256 verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
                 color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 7.dp))
             OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
@@ -1390,7 +1390,7 @@ private fun SetupBootScreen(
                         Text("• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
                         Text("• MIMO Studio · SDXL 1.0 · about 6.94 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
                         Spacer(Modifier.height(12.dp))
-                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
+                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 3 GB free for Brain; MIMO Studio checks its larger storage requirement before downloading.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
                         Spacer(Modifier.height(6.dp))
                         Text(if (wifiOnly) "Wi-Fi only is ON. Downloads will wait for Wi-Fi." else "Mobile data is allowed. Your carrier may charge data fees.", color = Color(0xFFB9CDE4), fontSize = 11.sp)
                         Spacer(Modifier.height(10.dp))
