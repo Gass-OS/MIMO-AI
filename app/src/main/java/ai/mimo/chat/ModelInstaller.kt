@@ -103,6 +103,27 @@ class ModelInstaller(private val context: Context) {
         return id
     }
 
+    fun describeReason(transfer: Transfer): String {
+        if (transfer.reason == 0) return ""
+        val label = when (transfer.reason) {
+            DownloadManager.PAUSED_WAITING_FOR_NETWORK -> "Waiting for an allowed network"
+            DownloadManager.PAUSED_QUEUED_FOR_WIFI -> "Waiting for Wi-Fi"
+            DownloadManager.PAUSED_WAITING_TO_RETRY -> "Waiting to retry"
+            DownloadManager.PAUSED_UNKNOWN -> "Paused by Android"
+            DownloadManager.ERROR_CANNOT_RESUME -> "Cannot resume this transfer"
+            DownloadManager.ERROR_DEVICE_NOT_FOUND -> "Download storage is unavailable"
+            DownloadManager.ERROR_FILE_ALREADY_EXISTS -> "A file with this name already exists"
+            DownloadManager.ERROR_FILE_ERROR -> "Storage file error"
+            DownloadManager.ERROR_HTTP_DATA_ERROR -> "Network data error"
+            DownloadManager.ERROR_INSUFFICIENT_SPACE -> "Not enough storage space"
+            DownloadManager.ERROR_TOO_MANY_REDIRECTS -> "Too many server redirects"
+            DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> "Server rejected the download (HTTP error)"
+            DownloadManager.ERROR_UNKNOWN -> "Unknown Android download error"
+            else -> "Android download reason ${transfer.reason}"
+        }
+        return label
+    }
+
     fun query(id: Long): Transfer? {
         if (id == COMPLETED_ALREADY_INSTALLED || id == INVALID_ID) return null
         var cursor: Cursor? = null
