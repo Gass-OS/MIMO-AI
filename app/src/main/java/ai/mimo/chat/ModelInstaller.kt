@@ -118,7 +118,15 @@ class ModelInstaller(private val context: Context) {
                     val network = connectivity.activeNetwork
                     val capabilities = network?.let { connectivity.getNetworkCapabilities(it) }
                     val connected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-                    val wifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+                    // Android may expose a VPN as the active network while Wi-Fi
+                    // remains a separate underlying network. Check all networks so
+                    // Wi-Fi-only mode does not get stuck behind a VPN transport.
+                    val wifi = connectivity.allNetworks.any { candidate ->
+                        connectivity.getNetworkCapabilities(candidate)?.let {
+                            it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                                it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                        } == true
+                    }
                     if (!connected || (wifiOnly && !wifi)) {
                         val reason = if (!connected) 2 else 1
                         val waiting = Transfer(id, DownloadManager.STATUS_PAUSED, partial.length(), -1L, reason)
@@ -141,6 +149,10 @@ class ModelInstaller(private val context: Context) {
 
                     try {
                         val response = connection.responseCode
+                        if (response == HttpURLConnection.HTTP_REQUESTED_RANGE_NOT_SATISFIABLE && offset > 0L) {
+                            partial.delete()
+                            continue
+                        }
                         if (response !in 200..299) {
                             val message = "Model server returned HTTP $response"
                             publish(Transfer(id, DownloadManager.STATUS_FAILED, offset, -1L, 3), message)
