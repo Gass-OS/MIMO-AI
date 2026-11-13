@@ -289,6 +289,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var brainTotalBytes by remember { mutableLongStateOf(-1L) }
     var studioDownloadedBytes by remember { mutableLongStateOf(0L) }
     var studioTotalBytes by remember { mutableLongStateOf(-1L) }
+    var brainDownloadedBytes by remember { mutableLongStateOf(0L) }
+    var brainTotalBytes by remember { mutableLongStateOf(-1L) }
+    var studioDownloadedBytes by remember { mutableLongStateOf(0L) }
+    var studioTotalBytes by remember { mutableLongStateOf(-1L) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
     var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
@@ -337,9 +341,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     installerStatus = "Downloading MIMO Brain…"
                     brainVerified = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
                         if (transfer != null) {
+                            brainDownloadedBytes = transfer.downloadedBytes
+                            brainTotalBytes = transfer.totalBytes
                             if (transfer.totalBytes > 0L) {
                                 brainProgress = transfer.progress
-                                installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded"
+                                installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
                             } else {
                                 installerStatus = when (transfer.status) {
                                     android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
@@ -363,9 +369,11 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     installerStatus = "MIMO Brain file verified. Downloading MIMO Studio…"
                     studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
                         if (transfer != null) {
+                            studioDownloadedBytes = transfer.downloadedBytes
+                            studioTotalBytes = transfer.totalBytes
                             if (transfer.totalBytes > 0L) {
                                 studioProgress = transfer.progress
-                                installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded"
+                                installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
                             } else {
                                 installerStatus = when (transfer.status) {
                                     android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
@@ -471,6 +479,10 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     theme = theme,
                     brainProgress = brainProgress,
                     studioProgress = studioProgress,
+                    brainDownloadedBytes = brainDownloadedBytes,
+                    brainTotalBytes = brainTotalBytes,
+                    studioDownloadedBytes = studioDownloadedBytes,
+                    studioTotalBytes = studioTotalBytes,
                     brainReady = brainVerified,
                     studioReady = studioVerified,
                     downloadStarted = downloadStarted,
@@ -1127,6 +1139,10 @@ private fun SetupBootScreen(
     theme: MimoTheme,
     brainProgress: Float,
     studioProgress: Float,
+    brainDownloadedBytes: Long,
+    brainTotalBytes: Long,
+    studioDownloadedBytes: Long,
+    studioTotalBytes: Long,
     brainReady: Boolean,
     studioReady: Boolean,
     downloadStarted: Boolean,
@@ -1231,7 +1247,10 @@ private fun SetupBootScreen(
                         )
                     }
                     Text(
-                        if (brainReady) "Model file verified · chat runtime integration pending" else if (downloadStarted) statusMessage else "Ready when you approve the download",
+                        if (brainReady) "Model file verified · chat runtime integration pending"
+                        else if (downloadStarted && brainTotalBytes <= 0L) "Received ${formatModelBytes(brainDownloadedBytes)} · waiting for server file-size information or first data"
+                        else if (downloadStarted) "${formatModelBytes(brainDownloadedBytes)} / ${formatModelBytes(brainTotalBytes)} received"
+                        else "Ready when you approve the download",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(Modifier.height(19.dp))
@@ -1258,6 +1277,8 @@ private fun SetupBootScreen(
                     }
                     Text(
                         if (studioReady) "Model file verified · image runtime integration pending"
+                        else if (brainReady && downloadStarted && studioTotalBytes <= 0L) "Received ${formatModelBytes(studioDownloadedBytes)} · waiting for server file-size information or first data"
+                        else if (brainReady && downloadStarted) "${formatModelBytes(studioDownloadedBytes)} / ${formatModelBytes(studioTotalBytes)} received"
                         else if (brainReady) "MIMO Studio download is next"
                         else "Starts after MIMO Brain is verified",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
@@ -1266,15 +1287,25 @@ private fun SetupBootScreen(
                     Text("SETUP PROGRESS", color = Color(0xFF8CAEFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                     val total = if (brainReady) (0.65f + safeStudio * 0.35f) else safeBrain * 0.65f
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${(total * 100).toInt()}%", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(
+                            if (downloadStarted && !brainReady && safeBrain <= 0f) "CONNECTING…"
+                            else "${(total * 100).toInt()}%",
+                            color = Color.White, fontSize = if (downloadStarted && !brainReady && safeBrain <= 0f) 15.sp else 25.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                         Spacer(Modifier.weight(1f))
-                        Text(if (brainReady && safeStudio < 1f) "Chat available · Studio continues" else "Actual verified progress", color = Color(0xFF9FB5CE), fontSize = 10.sp)
+                        Text(
+                            if (downloadStarted && !brainReady && safeBrain <= 0f) "Waiting for first bytes"
+                            else if (brainReady && safeStudio < 1f) "Chat file verified · Studio continues"
+                            else "Actual verified progress",
+                            color = Color(0xFF9FB5CE), fontSize = 10.sp
+                        )
                     }
-                    LinearProgressIndicator(
-                        progress = { total.coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape),
-                        color = blue, trackColor = Color(0xFF1A2B40)
-                    )
+                    if (downloadStarted && !brainReady && safeBrain <= 0f) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
+                    } else {
+                        LinearProgressIndicator(progress = { total.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
+                    }
                 }
             }
             Spacer(Modifier.height(18.dp))
