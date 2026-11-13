@@ -229,6 +229,13 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var speechEnabled by remember { mutableStateOf(prefs.getBoolean("speech_enabled", true)) }
     var autoSpeak by remember { mutableStateOf(prefs.getBoolean("auto_speak", false)) }
     var speechRate by remember { mutableFloatStateOf(prefs.getFloat("speech_rate", 1.0f)) }
+    val installer = remember(context) { ModelInstaller(context) }
+    var downloadStarted by remember { mutableStateOf(prefs.getBoolean("model_download_started", false)) }
+    var brainProgress by remember { mutableFloatStateOf(0f) }
+    var studioProgress by remember { mutableFloatStateOf(0f) }
+    var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
+    var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
+    var installerStatus by remember { mutableStateOf("Large downloads require your approval. Wi-Fi only is enabled by default.") }
     var speechReady by remember { mutableStateOf(false) }
     val tts = remember(context) {
         TextToSpeech(context) { status -> speechReady = status == TextToSpeech.SUCCESS }
@@ -262,6 +269,48 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         }
     }
     val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
+
+    LaunchedEffect(downloadStarted) {
+        if (downloadStarted) {
+            try {
+                if (!installer.hasRequiredSpace()) {
+                    installerStatus = "At least 15 GB of free storage is required before starting these downloads."
+                    return@LaunchedEffect
+                }
+                if (!brainVerified) {
+                    installerStatus = "Downloading MIMO Brain…"
+                    brainVerified = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
+                        if (transfer != null && transfer.totalBytes > 0L) {
+                            brainProgress = transfer.progress
+                            installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded"
+                        }
+                    }
+                    if (!brainVerified) {
+                        installerStatus = "MIMO Brain download failed. Check your connection and try again."
+                        return@LaunchedEffect
+                    }
+                }
+                brainProgress = 1f
+                if (!studioVerified) {
+                    installerStatus = "MIMO Brain file verified. Downloading MIMO Studio…"
+                    studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
+                        if (transfer != null && transfer.totalBytes > 0L) {
+                            studioProgress = transfer.progress
+                            installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded"
+                        }
+                    }
+                    if (!studioVerified) {
+                        installerStatus = "MIMO Studio download failed. MIMO Brain remains safely verified; retry to continue."
+                        return@LaunchedEffect
+                    }
+                }
+                studioProgress = 1f
+                installerStatus = "Both model files passed SHA-256 verification. AI runtime integration is the next step."
+            } catch (error: Exception) {
+                installerStatus = "Download setup error: ${error.message ?: "unknown error"}"
+            }
+        }
+    }
 
     BackHandler(enabled = true) { (context as? Activity)?.finishAndRemoveTask() }
     CompositionLocalProvider(
@@ -313,9 +362,20 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     onPermissions = { page = "permissions" }, onAbout = { page = "about" }, onProjects = { page = "projects" })
                 "setup" -> SetupBootScreen(
                     theme = theme,
-                    brainProgress = 0f,
-                    studioProgress = 0f,
-                    brainReady = false,
+                    brainProgress = brainProgress,
+                    studioProgress = studioProgress,
+                    brainReady = brainVerified,
+                    studioReady = studioVerified,
+                    downloadStarted = downloadStarted,
+                    statusMessage = installerStatus,
+                    onStartDownloads = {
+                        if (!installer.hasRequiredSpace()) {
+                            installerStatus = "At least 15 GB of free storage is required. Free up space and try again."
+                        } else {
+                            prefs.edit().putBoolean("model_download_started", true).apply()
+                            downloadStarted = true
+                        }
+                    },
                     onContinuePreview = { page = "chat" }
                 )
                 "models" -> ModelManagerScreen(theme, onBack = { page = "settings" })
@@ -849,6 +909,10 @@ private fun SetupBootScreen(
     brainProgress: Float,
     studioProgress: Float,
     brainReady: Boolean,
+    studioReady: Boolean,
+    downloadStarted: Boolean,
+    statusMessage: String,
+    onStartDownloads: () -> Unit,
     onContinuePreview: () -> Unit
 ) {
     val tips = listOf(
@@ -890,12 +954,12 @@ private fun SetupBootScreen(
             Text("INITIALIZING YOUR PRIVATE AI", color = blue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Spacer(Modifier.height(34.dp))
             Text(
-                if (brainReady) "Your chat assistant is ready" else "Preparing MIMO Brain",
+                if (brainReady) "MIMO Brain file verified" else "Preparing MIMO Brain",
                 color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center
             )
             Text(
-                if (brainReady) "You can start chatting while Studio finishes in the background."
-                else "Setting up the language engine first. Image tools will follow automatically.",
+                if (brainReady) "The Brain file is verified. The on-device chat runtime still needs integration."
+                else "Approve the one-time download to install the verified MIMO components.",
                 color = Color(0xFFB9CDE4), fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 18.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -925,7 +989,7 @@ private fun SetupBootScreen(
                         color = blue, trackColor = Color(0xFF1A2B40)
                     )
                     Text(
-                        if (brainReady) "Chat engine verified" else "Waiting for the verified download service",
+                        if (brainReady) "Model file verified · chat runtime integration pending" else if (downloadStarted) statusMessage else "Ready when you approve the download",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(Modifier.height(19.dp))
@@ -938,7 +1002,7 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.AutoAwesome, null, tint = Color(0xFF8CAEFF), modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Studio", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (safeStudio >= 1f) "READY" else if (brainReady) "${(safeStudio * 100).toInt()}% · BACKGROUND" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(if (studioReady) "VERIFIED" else if (brainReady) "${(safeStudio * 100).toInt()}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
                     LinearProgressIndicator(
@@ -947,9 +1011,9 @@ private fun SetupBootScreen(
                         color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40)
                     )
                     Text(
-                        if (brainReady && safeStudio < 1f) "Image creation is preparing in the background."
-                        else if (safeStudio >= 1f) "Creative tools verified"
-                        else "Starts after MIMO Brain is ready",
+                        if (studioReady) "Model file verified · image runtime integration pending"
+                        else if (brainReady) "MIMO Studio download is next"
+                        else "Starts after MIMO Brain is verified",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(Modifier.height(18.dp))
@@ -982,15 +1046,22 @@ private fun SetupBootScreen(
             }
             Spacer(Modifier.height(16.dp))
             Text("FIRST SETUP · ABOUT 10 GB TOTAL", color = Color(0xFF7895B7), fontSize = 9.sp, letterSpacing = 1.3.sp)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(statusMessage, color = Color(0xFFB9CDE4), fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 15.sp)
+            Spacer(Modifier.height(10.dp))
+            Button(
+                onClick = onStartDownloads,
+                enabled = !downloadStarted || (!brainVerified || !studioVerified),
+                colors = ButtonDefaults.buttonColors(containerColor = blue, contentColor = Color(0xFF061426))
+            ) {
+                Text(if (downloadStarted) "Resume / retry downloads" else "Start downloads · about 9.5 GB", fontWeight = FontWeight.Bold)
+            }
+            Text("Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
+                color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 7.dp))
             OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
                 Text("Continue to preview", color = Color(0xFFB9D8FA))
             }
-            Text(
-                "This screen is ready for live installer progress. Downloads and engine verification are not connected in this build yet.",
-                color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 9.dp)
-            )
         }
     }
 }
