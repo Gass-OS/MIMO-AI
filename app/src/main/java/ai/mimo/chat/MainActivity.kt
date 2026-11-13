@@ -350,9 +350,13 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
 
     BackHandler(enabled = true) {
-        when (page) {
-            "settings", "setup" -> { page = "chat"; showExitDialog = false }
-            "models", "permissions", "about", "projects" -> { page = "settings"; showExitDialog = false }
+        when {
+            showLanguagePicker -> { showLanguagePicker = false; page = "chat" }
+            showWelcome -> { showWelcome = false; page = "chat" }
+            page == "settings" || page == "setup" -> { page = "chat"; showExitDialog = false }
+            page == "models" || page == "permissions" || page == "about" || page == "projects" -> {
+                page = "settings"; showExitDialog = false
+            }
             else -> showExitDialog = true
         }
     }
