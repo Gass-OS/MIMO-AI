@@ -1493,27 +1493,31 @@ private fun SetupBootScreen(
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(Modifier.height(18.dp))
-                    Text("SETUP PROGRESS", color = Color(0xFF8CAEFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
-                    val total = if (brainReady) (0.65f + safeStudio * 0.35f) else safeBrain * 0.65f
+                    val stageProgress = if (brainReady) safeStudio else safeBrain
+                    val stageName = if (brainReady) "MIMO STUDIO DOWNLOAD" else "MIMO BRAIN DOWNLOAD"
+                    Text(stageName, color = Color(0xFF8CAEFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            if (waitingForBrain) "CONNECTING…"
-                            else "${String.format(Locale.US, "%.2f", total * 100.0)}%",
-                            color = Color.White, fontSize = if (waitingForBrain) 15.sp else 25.sp,
+                            if (waitingForBrain || waitingForStudio) "CONNECTING…"
+                            else "${String.format(Locale.US, "%.2f", stageProgress * 100.0)}%",
+                            color = Color.White, fontSize = if (waitingForBrain || waitingForStudio) 15.sp else 25.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            if (waitingForBrain) "Waiting for first bytes"
-                            else if (brainReady && safeStudio < 1f) "Chat file verified · Studio continues"
-                            else "Actual verified progress",
+                            when {
+                                waitingForBrain || waitingForStudio -> "Waiting for download data"
+                                brainReady && studioReady -> "Both model files verified"
+                                brainReady -> "Brain verified · Studio downloading"
+                                else -> "Brain download in progress"
+                            },
                             color = Color(0xFF9FB5CE), fontSize = 10.sp
                         )
                     }
-                    if (waitingForBrain) {
+                    if (waitingForBrain || waitingForStudio) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
                     } else {
-                        LinearProgressIndicator(progress = { total.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
+                        LinearProgressIndicator(progress = { stageProgress.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
                     }
                 }
             }
@@ -1546,9 +1550,21 @@ private fun SetupBootScreen(
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Text("MIMO BRAIN SETUP · ABOUT 2.5 GB", color = Color(0xFF7895B7), fontSize = 9.sp, letterSpacing = 1.3.sp)
+            Text(if (brainReady) "MIMO STUDIO SETUP · ABOUT 6.94 GB" else "MIMO BRAIN SETUP · ABOUT 2.5 GB", color = Color(0xFF7895B7), fontSize = 9.sp, letterSpacing = 1.3.sp)
             Spacer(Modifier.height(8.dp))
-            Text(statusMessage, color = Color(0xFFB9CDE4), fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 15.sp)
+            Text(
+                when {
+                    statusMessage.contains("failed", ignoreCase = true) || statusMessage.contains("error", ignoreCase = true) || statusMessage.contains("paused", ignoreCase = true) -> statusMessage
+                    studioReady -> "MIMO Brain and MIMO Studio are downloaded and verified."
+                    brainReady && studioTotalBytes > 0L -> "MIMO Studio · ${String.format(Locale.US, "%.2f", safeStudio * 100.0)}% · ${formatModelBytes(studioDownloadedBytes)} / ${formatModelBytes(studioTotalBytes)}"
+                    brainReady && downloadStarted -> "MIMO Studio is connecting · ${formatModelBytes(studioDownloadedBytes)} received"
+                    brainReady -> "MIMO Brain verified · MIMO Studio is next."
+                    brainTotalBytes > 0L -> "MIMO Brain · ${String.format(Locale.US, "%.2f", safeBrain * 100.0)}% · ${formatModelBytes(brainDownloadedBytes)} / ${formatModelBytes(brainTotalBytes)}"
+                    downloadStarted -> "MIMO Brain is connecting · waiting for download data"
+                    else -> statusMessage
+                },
+                color = Color(0xFFB9CDE4), fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 15.sp
+            )
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { downloadConsentAccepted = false; showDownloadConsent = true },
