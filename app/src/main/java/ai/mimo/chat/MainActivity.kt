@@ -93,7 +93,9 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 SettingsScreen(theme, themeId, onTheme = {
                     themeId = it
                     prefs.edit().putString("theme", it).apply()
-                }, onBack = { page = "chat" })
+                }, onBack = { page = "chat" }, onManageModels = { page = "models" })
+            } else if (page == "models") {
+                ModelManagerScreen(theme, onBack = { page = "settings" })
             } else {
                 ChatScreen(theme, onSettings = { page = "settings" })
             }
@@ -241,7 +243,7 @@ private fun SuggestionChip(label: String, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun SettingsScreen(theme: MimoTheme, selected: String, onTheme: (String) -> Unit, onBack: () -> Unit) {
+private fun SettingsScreen(theme: MimoTheme, selected: String, onTheme: (String) -> Unit, onBack: () -> Unit, onManageModels: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back", tint = theme.secondary) }
@@ -267,9 +269,17 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, onTheme: (String)
             }
             item {
                 SettingsHeader("AI MODELS", theme)
-                SettingsRow(Icons.Outlined.Psychology, "Language model", "Not installed · planned", theme)
-                SettingsRow(Icons.Outlined.Image, "Image generation", "Not installed · planned", theme)
-                SettingsRow(Icons.Outlined.Storage, "Model storage", "Model manager coming soon", theme)
+                SettingsRow(Icons.Outlined.Psychology, "Language model", "Not installed · source verification pending", theme)
+                SettingsRow(Icons.Outlined.Image, "Image generation", "Not installed · source verification pending", theme)
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).clickable(onClick = onManageModels).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Storage, null, tint = theme.accent)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Model Manager", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Storage, setup status and model downloads", color = theme.secondary, fontSize = 11.sp)
+                    }
+                    Icon(Icons.Outlined.ChevronRight, null, tint = theme.secondary)
+                }
             }
             item {
                 SettingsHeader("PREFERENCES", theme)
@@ -282,6 +292,72 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, onTheme: (String)
                 SettingsRow(Icons.Outlined.Info, "About MIMO AI", "Your AI. Your device. Your conversation.", theme)
                 SettingsRow(Icons.Outlined.Code, "Version", "0.1.0 · Early preview", theme)
                 Text("MIMO AI is an independent project. Model names and third-party components will be credited with their applicable licenses before release.", color = theme.secondary, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 8.dp))
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun ModelManagerScreen(theme: MimoTheme, onBack: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back", tint = theme.secondary) }
+            Column {
+                Text("Model Manager", fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                Text("Prepare MIMO for offline use", color = theme.secondary, fontSize = 12.sp)
+            }
+        }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
+            item {
+                Surface(color = theme.surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Psychology, null, tint = theme.accent, modifier = Modifier.size(26.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("MIMO Chat", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text("Language and conversation engine", color = theme.secondary, fontSize = 11.sp)
+                            }
+                            Surface(color = Color(0xFF6B552A), shape = RoundedCornerShape(20.dp)) {
+                                Text("Not installed", Modifier.padding(horizontal = 9.dp, vertical = 5.dp), color = Color(0xFFFFD98A), fontSize = 10.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth(), color = theme.accent, trackColor = theme.background)
+                        Text("Waiting for a verified download source", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
+                    }
+                }
+            }
+            item {
+                Surface(color = theme.surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.AutoAwesome, null, tint = theme.accent, modifier = Modifier.size(26.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("MIMO Image Studio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text("Local image creation engine", color = theme.secondary, fontSize = 11.sp)
+                            }
+                            Surface(color = Color(0xFF6B552A), shape = RoundedCornerShape(20.dp)) {
+                                Text("Not installed", Modifier.padding(horizontal = 9.dp, vertical = 5.dp), color = Color(0xFFFFD98A), fontSize = 10.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth(), color = theme.accent, trackColor = theme.background)
+                        Text("Waiting for a verified download source", Modifier.padding(top = 8.dp), color = theme.secondary, fontSize = 11.sp)
+                    }
+                }
+            }
+            item {
+                SettingsHeader("SETUP CHECKLIST", theme)
+                SettingsRow(Icons.Outlined.VerifiedUser, "Source and license", "Must be checked before distributing model files", theme)
+                SettingsRow(Icons.Outlined.Fingerprint, "File integrity", "SHA-256 verification will be required", theme)
+                SettingsRow(Icons.Outlined.CloudDownload, "Resumable downloads", "Not enabled until secure sources are configured", theme)
+                SettingsRow(Icons.Outlined.Storage, "Device storage", "Storage check will run before each download", theme)
+            }
+            item {
+                Text("No download has started. Progress is shown as 0% because no verified model files or download URLs are configured yet. MIMO will not report an engine as ready until its files are downloaded and verified.", color = theme.secondary, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 4.dp))
             }
         }
     }
