@@ -891,7 +891,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 }
             }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
         }
-        Text("Mimo Gass v1 · Private AI workspace", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text("Local AI runtime integration is still in progress", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
     }
 }
 
