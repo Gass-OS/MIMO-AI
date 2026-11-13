@@ -98,7 +98,8 @@ class MimoDownloadService : Service() {
                 state.edit().putLong("brain_downloaded", installer.modelFile(ModelInstaller.Model.BRAIN).length())
                     .putLong("brain_total", installer.modelFile(ModelInstaller.Model.BRAIN).length())
                     .putString("status", message).putBoolean("brain_complete", true).apply()
-                updateNotification("MIMO Brain verified · setup complete", 100, true)
+                updateNotification("MIMO Brain verified · preparing MIMO Studio", 100, true)
+                runStudioDownload(wifiOnly)
             } else {
                 val message = installer.query(installer.savedDownloadId(ModelInstaller.Model.BRAIN))
                     ?.let { "MIMO Brain download failed: " + installer.describeReason(it) }
@@ -111,6 +112,49 @@ class MimoDownloadService : Service() {
             throw cancelled
         } catch (error: Exception) {
             val message = "Download service error: " + (error.message ?: error.javaClass.simpleName)
+            state.edit().putString("status", message).apply()
+            updateNotification(message, 0, false)
+        }
+    }
+
+    private suspend fun runStudioDownload(wifiOnly: Boolean) {
+        state.edit().putString("status", "MIMO Brain verified · downloading MIMO Studio in the background…").apply()
+        updateNotification("Downloading MIMO Studio", 0, false)
+        try {
+            val success = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
+                if (transfer != null) {
+                    val percent = (transfer.progress * 100f).toInt().coerceIn(0, 100)
+                    val status = when {
+                        transfer.status == android.app.DownloadManager.STATUS_PAUSED ->
+                            "MIMO Studio paused: " + installer.describeReason(transfer)
+                        transfer.status == android.app.DownloadManager.STATUS_FAILED ->
+                            "MIMO Studio download failed: " + installer.describeReason(transfer)
+                        transfer.totalBytes <= 0L -> "MIMO Studio connected · waiting for download data…"
+                        else -> "MIMO Studio · $percent% · " + formatBytes(transfer.downloadedBytes) + " / " + formatBytes(transfer.totalBytes)
+                    }
+                    state.edit().putLong("studio_downloaded", transfer.downloadedBytes)
+                        .putLong("studio_total", transfer.totalBytes).putString("status", status).apply()
+                    updateNotification(status, percent, transfer.totalBytes > 0L)
+                }
+            }
+            if (success) {
+                val length = installer.modelFile(ModelInstaller.Model.STUDIO).length()
+                val message = "MIMO Brain and MIMO Studio downloaded and SHA-256 verified in private app storage."
+                state.edit().putLong("studio_downloaded", length).putLong("studio_total", length)
+                    .putString("status", message).putBoolean("studio_complete", true).apply()
+                updateNotification("MIMO Brain + Studio verified · setup complete", 100, true)
+            } else {
+                val message = installer.query(installer.savedDownloadId(ModelInstaller.Model.STUDIO))
+                    ?.let { "MIMO Studio download failed: " + installer.describeReason(it) }
+                    ?: "MIMO Studio download failed. MIMO Brain remains verified; retry to continue."
+                state.edit().putString("status", message).apply()
+                updateNotification(message, 0, false)
+            }
+        } catch (cancelled: CancellationException) {
+            state.edit().putString("status", "MIMO Studio download paused. Reopen MIMO to resume.").apply()
+            throw cancelled
+        } catch (error: Exception) {
+            val message = "MIMO Studio download error: " + (error.message ?: error.javaClass.simpleName)
             state.edit().putString("status", message).apply()
             updateNotification(message, 0, false)
         }
