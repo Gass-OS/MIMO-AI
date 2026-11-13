@@ -1183,9 +1183,9 @@ private fun SetupBootScreen(
         Box(Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-130).dp, y = 100.dp)
             .clip(CircleShape).background(Color(0xFF1766B5).copy(alpha = 0.09f)))
         Column(
-            Modifier.fillMaxSize().padding(horizontal = 25.dp, vertical = 30.dp),
+            Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 25.dp, vertical = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 Box {
