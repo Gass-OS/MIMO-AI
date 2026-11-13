@@ -104,7 +104,7 @@ private object MimoArabic {
         "Storage · Keep enough free internal space for large model files and temporary downloads." to "التخزين · اترك مساحة داخلية كافية لملفات النماذج الكبيرة والتنزيلات المؤقتة.",
         "Offline use · Supported features can work locally after their runtime engines are integrated." to "العمل دون إنترنت · يمكن للميزات المدعومة العمل محلياً بعد دمج محركات التشغيل.",
         "Image prompts · Describe lighting, style, composition and important details." to "وصف الصور · اشرح الإضاءة والأسلوب والتكوين والتفاصيل المهمة.",
-        "Battery care · Choose Low mode if your phone gets hot or the battery is running low." to "الحفاظ على البطارية · اختر الوضع المنخفض إذا ارتفعت حرارة الهاتف أو انخفض شحن البطارية."
+        "Battery care · Choose Low mode if your phone gets hot or the battery is running low." to "الحفاظ على البطارية · اختر الوضع المنخفض إذا ارتفعت حرارة الهاتف أو انخفض شحن البطارية.",
         "Continue" to "متابعة",
         "Accept & continue" to "أوافق وأتابع",
         "🇬🇧 English" to "🇬🇧 الإنجليزية",
