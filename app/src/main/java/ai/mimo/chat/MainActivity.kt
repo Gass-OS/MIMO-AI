@@ -139,7 +139,7 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 
 @Composable
 private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
-    val messages = remember { mutableStateListOf<ChatMessage>() }
+    val messages = remember { mutableStateListOf(ChatMessage(MimoIdentity.chatGreeting, false)) }
     var input by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -178,7 +178,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
                 .border(1.dp, theme.accent.copy(alpha = 0.24f), RoundedCornerShape(24.dp)).padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { messages.add(ChatMessage("Image generation will be connected when the local image engine is integrated.", false)) }) {
+            IconButton(onClick = { messages.add(ChatMessage(MimoIdentity.imageGreeting, false)) }) {
                 Icon(Icons.Outlined.AddPhotoAlternate, "Image generation", tint = theme.accent)
             }
             BasicTextField(
@@ -195,7 +195,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
             IconButton(onClick = {
                 if (input.isNotBlank()) {
                     messages.add(ChatMessage(input.trim(), true))
-                    messages.add(ChatMessage("MIMO's local language engine is coming in the next development phase. Your message is ready for the AI runtime.", false))
+                    messages.add(ChatMessage(MimoIdentity.previewReply, false))
                     input = ""
                 }
             }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
