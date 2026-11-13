@@ -2,6 +2,7 @@ package ai.mimo.chat
 
 import android.content.Context
 import android.os.Bundle
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -42,10 +43,28 @@ private val themes = listOf(
 private data class ChatMessage(val text: String, val fromUser: Boolean)
 
 class MainActivity : ComponentActivity() {
+    @Suppress("DEPRECATION")
+    private fun enableImmersiveMode() {
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableImmersiveMode()
         val prefs = getSharedPreferences("mimo_settings", Context.MODE_PRIVATE)
         setContent { MimoApp(prefs) }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) enableImmersiveMode()
     }
 }
 
