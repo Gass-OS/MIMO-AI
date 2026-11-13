@@ -798,16 +798,20 @@ private fun ChatScreen(
         prefs.edit().putString("saved_chat_library", updated.toString()).putString("active_chat_messages", "[]").apply()
     }
     fun loadSavedChat(index: Int) {
-        archiveCurrentChat()
         val chosen = savedChats.optJSONObject(index) ?: return
+        val chosenId = chosen.optString("id")
+        val chosenMessages = chosen.optJSONArray("messages") ?: org.json.JSONArray()
+        archiveCurrentChat()
         messages.clear()
-        val array = chosen.optJSONArray("messages") ?: org.json.JSONArray()
-        for (i in 0 until array.length()) {
-            val item = array.optJSONObject(i) ?: continue
+        for (i in 0 until chosenMessages.length()) {
+            val item = chosenMessages.optJSONObject(i) ?: continue
             messages.add(ChatMessage(item.optString("text"), item.optBoolean("fromUser")))
         }
         val updated = org.json.JSONArray()
-        for (i in 0 until savedChats.length()) if (i != index) updated.put(savedChats.getJSONObject(i))
+        for (i in 0 until savedChats.length()) {
+            val item = savedChats.optJSONObject(i) ?: continue
+            if (item.optString("id") != chosenId) updated.put(item)
+        }
         savedChats = updated
         prefs.edit().putString("saved_chat_library", updated.toString()).apply()
         historyOpen = false
