@@ -174,7 +174,12 @@ private object MimoArabic {
         "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل."
 
     )
-    fun translate(value: String): String = phrases[value] ?: value
+    fun translate(value: String): String = phrases[value] ?: when {
+        value.startsWith("MIMO Brain · ") -> "عقل ميمو · " + value.substringAfter("MIMO Brain · ")
+        value.startsWith("MIMO Studio · ") -> "استوديو ميمو · " + value.substringAfter("MIMO Studio · ")
+        value.startsWith("Download setup error: ") -> "حدث خطأ في إعداد التنزيل: " + value.substringAfter("Download setup error: ")
+        else -> value
+    }
 }
 
 private data class MimoTheme(
