@@ -192,7 +192,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                         if (Build.VERSION.SDK_INT >= 33) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         else notificationsGranted = true
                     },
-                    onPhoto = { photoLauncher.launch(ActivityResultContracts.PickVisualMedia.ImageOnly) },
+                    onPhoto = { photoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                     onAppSettings = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) })
                 "about" -> AboutScreen(theme, onBack = { page = "settings" })
                 "projects" -> ProjectsScreen(theme, onBack = { page = "settings" }, onOpen = { url ->
