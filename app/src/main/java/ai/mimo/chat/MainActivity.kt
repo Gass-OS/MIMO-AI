@@ -171,7 +171,29 @@ private object MimoArabic {
         "Model file verified · image runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك الصور ما زال مطلوباً",
         "Starts after MIMO Brain is verified" to "يبدأ بعد التحقق من عقل ميمو",
         "Resume / retry downloads" to "استئناف / إعادة التنزيل", "Start downloads · about 9.5 GB" to "بدء التنزيل · حوالي 9.5 جيجابايت",
-        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل."
+        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل.",
+        "Welcome to MIMO AI" to "مرحباً بك في ميمو AI",
+        "One assistant. Two creative tools." to "مساعد واحد وأداتان للإبداع",
+        "Your privacy matters" to "خصوصيتك تهمّنا",
+        "Permissions and setup" to "الأذونات والإعداد",
+        "Your personal AI space for conversations, learning, writing and creative ideas." to "مساحتك الذكية للمحادثة والتعلّم والكتابة والأفكار الإبداعية.",
+        "MIMO Brain is planned for chat, answers and writing. MIMO Studio is planned for image creation. Both model files are downloaded only after your approval." to "يُخصّص عقل ميمو للمحادثة والإجابات والكتابة، واستوديو ميمو لإنشاء الصور. لن يتم تنزيل أي ملف قبل موافقتك.",
+        "The model files come from their official public model repositories. Downloading them does not send your chat messages to those repositories. Offline AI features still require their runtime engines to be integrated." to "تأتي ملفات النماذج من مستودعاتها الرسمية والعامة. تنزيلها لا يرسل محادثاتك إلى تلك المستودعات. كما أن تشغيل الذكاء الاصطناعي دون إنترنت يتطلب دمج محركات التشغيل.",
+        "Internet access is needed for the one-time model download. Notifications are optional. Photos, microphone, camera and location are requested only if you choose a feature that needs them." to "يلزم اتصال الإنترنت لتنزيل النماذج لمرة واحدة. الإشعارات اختيارية، ولن نطلب الصور أو الميكروفون أو الكاميرا أو الموقع إلا عند استخدام ميزة تحتاج إليها.",
+        "I understand and agree to continue with setup." to "أفهم المعلومات وأوافق على متابعة الإعداد.",
+        "Continue" to "متابعة",
+        "Accept & continue" to "أوافق وأتابع",
+        "Review & download · about 9.5 GB" to "مراجعة وتنزيل · حوالي 9.5 جيجابايت",
+        "Download MIMO models?" to "تنزيل نماذج ميمو؟",
+        "The first setup downloads about 9.5 GB in total:" to "يتطلب الإعداد الأول تنزيل حوالي 9.5 جيجابايت:",
+        "• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB" to "• عقل ميمو · Qwen3 4B Q4_K_M · حوالي 2.5 جيجابايت",
+        "• MIMO Studio · SDXL 1.0 · about 6.94 GB" to "• استوديو ميمو · SDXL 1.0 · حوالي 6.94 جيجابايت",
+        "Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup." to "سيتم تنزيل الملفات بالتتابع والتحقق منها باستخدام SHA-256 قبل اعتمادها. يرجى توفير 15 جيجابايت على الأقل.",
+        "Wi-Fi only is ON. Downloads will wait for Wi-Fi." to "التنزيل عبر Wi‑Fi فقط مفعّل. سينتظر التنزيل توفر شبكة Wi‑Fi.",
+        "Mobile data is allowed. Your carrier may charge data fees." to "بيانات الهاتف مسموحة. قد تُحتسب رسوم من شركة الاتصالات.",
+        "I approve downloading these large model files to this device." to "أوافق على تنزيل ملفات النماذج الكبيرة إلى هذا الجهاز.",
+        "Accept & start download" to "أوافق وابدأ التنزيل",
+        "Not now" to "ليس الآن"
 
     )
     fun translate(value: String): String = phrases[value] ?: when {
@@ -1263,7 +1285,9 @@ private fun SetupBootScreen(
                         Text("• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
                         Text("• MIMO Studio · SDXL 1.0 · about 6.94 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
                         Spacer(Modifier.height(12.dp))
-                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup. Wi-Fi only is ${if (wifiOnly) "ON" else "OFF"}; change it on the previous screen if needed.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
+                        Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 15 GB free for safe setup.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(if (wifiOnly) "Wi-Fi only is ON. Downloads will wait for Wi-Fi." else "Mobile data is allowed. Your carrier may charge data fees.", color = Color(0xFFB9CDE4), fontSize = 11.sp)
                         Spacer(Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = downloadConsentAccepted, onCheckedChange = { downloadConsentAccepted = it })
