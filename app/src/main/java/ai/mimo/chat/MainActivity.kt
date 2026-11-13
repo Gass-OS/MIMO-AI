@@ -1172,6 +1172,10 @@ private fun SetupBootScreen(
     }
     val safeBrain = brainProgress.coerceIn(0f, 1f)
     val safeStudio = studioProgress.coerceIn(0f, 1f)
+    val waitingForBrain = downloadStarted && !brainReady && safeBrain <= 0f &&
+        !statusMessage.contains("failed", ignoreCase = true) && !statusMessage.contains("error", ignoreCase = true)
+    val waitingForStudio = downloadStarted && brainReady && !studioReady && safeStudio <= 0f &&
+        !statusMessage.contains("failed", ignoreCase = true) && !statusMessage.contains("error", ignoreCase = true)
     val blue = Color(0xFF66B7FF)
     Box(
         Modifier.fillMaxSize().background(
@@ -1237,7 +1241,7 @@ private fun SetupBootScreen(
                         Text(if (brainReady) "READY" else if (downloadStarted && safeBrain <= 0f) "…" else "${(safeBrain * 100).toInt()}%", color = blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
-                    if (!brainReady && downloadStarted && safeBrain <= 0f) {
+                    if (waitingForBrain) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
                     } else {
                         LinearProgressIndicator(
@@ -1266,7 +1270,7 @@ private fun SetupBootScreen(
                         Text(if (studioReady) "VERIFIED" else if (brainReady && downloadStarted && safeStudio <= 0f) "…" else if (brainReady) "${(safeStudio * 100).toInt()}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
-                    if (brainReady && !studioReady && downloadStarted && safeStudio <= 0f) {
+                    if (waitingForStudio) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape), color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40))
                     } else {
                         LinearProgressIndicator(
@@ -1288,20 +1292,20 @@ private fun SetupBootScreen(
                     val total = if (brainReady) (0.65f + safeStudio * 0.35f) else safeBrain * 0.65f
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            if (downloadStarted && !brainReady && safeBrain <= 0f) "CONNECTING…"
+                            if (waitingForBrain) "CONNECTING…"
                             else "${(total * 100).toInt()}%",
-                            color = Color.White, fontSize = if (downloadStarted && !brainReady && safeBrain <= 0f) 15.sp else 25.sp,
+                            color = Color.White, fontSize = if (waitingForBrain) 15.sp else 25.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            if (downloadStarted && !brainReady && safeBrain <= 0f) "Waiting for first bytes"
+                            if (waitingForBrain) "Waiting for first bytes"
                             else if (brainReady && safeStudio < 1f) "Chat file verified · Studio continues"
                             else "Actual verified progress",
                             color = Color(0xFF9FB5CE), fontSize = 10.sp
                         )
                     }
-                    if (downloadStarted && !brainReady && safeBrain <= 0f) {
+                    if (waitingForBrain) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
                     } else {
                         LinearProgressIndicator(progress = { total.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(9.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
