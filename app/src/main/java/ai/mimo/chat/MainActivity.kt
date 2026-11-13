@@ -706,7 +706,7 @@ private fun WelcomeScreen(theme: MimoTheme, language: String, onLanguage: (Strin
             Icon(Icons.Outlined.ArrowForward, null)
         }
         if (step > 0) {
-            TextButton(onClick = { step--; accepted = false }) {
+            TextButton(onClick = { step--; privacyAccepted = false; licenseAccepted = false }) {
                 Text("Back", color = theme.secondary)
             }
         }
