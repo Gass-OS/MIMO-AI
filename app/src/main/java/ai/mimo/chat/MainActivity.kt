@@ -591,15 +591,24 @@ private fun FirstRunLanguageScreen(theme: MimoTheme, selected: String, onSelect:
         Text("Choose your language", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         Text("اختر لغتك  ·  Choisissez votre langue", color = theme.secondary, fontSize = 14.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(26.dp))
-        listOf(Triple("العربية · تونس", "ar-TN", "RTL"), Triple("Français", "fr", "FR"), Triple("English", "en", "EN")).forEach { item ->
-            val active = selected == item.second
+        data class LanguageChoice(val name: String, val code: String, val tag: String, val subtitle: String)
+        listOf(
+            LanguageChoice("العربية · تونس", "ar-TN", "RTL", "واجهة عربية كاملة واتجاه من اليمين إلى اليسار"),
+            LanguageChoice("Français", "fr", "FR", "Interface en français · navigation et conseils"),
+            LanguageChoice("English", "en", "EN", "Full English interface · navigation and setup tips")
+        ).forEach { item ->
+            val active = selected == item.code
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(16.dp))
                 .background(theme.surface).border(if (active) 2.dp else 1.dp,
                     if (active) theme.accent else Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-                .clickable { onSelect(item.second) }.padding(horizontal = 18.dp, vertical = 17.dp),
+                .clickable { onSelect(item.code) }.padding(horizontal = 18.dp, vertical = 15.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(item.first, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                Text(item.third, color = theme.secondary, fontSize = 11.sp)
+                Column(Modifier.weight(1f)) {
+                    Text(item.name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(item.subtitle, color = theme.secondary, fontSize = 10.sp, lineHeight = 14.sp)
+                }
+                Text(item.tag, color = theme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 if (active) { Spacer(Modifier.width(8.dp)); Icon(Icons.Outlined.CheckCircle, null, tint = theme.accent) }
             }
         }
@@ -1235,7 +1244,7 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.Psychology, null, tint = blue, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Brain", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (brainReady) "READY" else if (downloadStarted && safeBrain <= 0f) "…" else "${(safeBrain * 100).toInt()}%", color = blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(if (brainReady) "VERIFIED" else if (waitingForBrain) "CONNECTING" else "${String.format(Locale.US, "%.2f", safeBrain * 100.0)}%", color = blue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
                     if (waitingForBrain) {
@@ -1264,7 +1273,7 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.AutoAwesome, null, tint = Color(0xFF8CAEFF), modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Studio", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (studioReady) "VERIFIED" else if (brainReady && downloadStarted && safeStudio <= 0f) "…" else if (brainReady) "${(safeStudio * 100).toInt()}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(if (studioReady) "VERIFIED" else if (waitingForStudio) "CONNECTING" else if (brainReady) "${String.format(Locale.US, "%.2f", safeStudio * 100.0)}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
                     if (waitingForStudio) {
@@ -1290,7 +1299,7 @@ private fun SetupBootScreen(
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             if (waitingForBrain) "CONNECTING…"
-                            else "${(total * 100).toInt()}%",
+                            else "${String.format(Locale.US, "%.2f", total * 100.0)}%",
                             color = Color.White, fontSize = if (waitingForBrain) 15.sp else 25.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
