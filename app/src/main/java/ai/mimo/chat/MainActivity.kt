@@ -580,6 +580,7 @@ private fun BrandMark(theme: MimoTheme, size: Int = 54) {
     }
 }
 
+@Composable
 private fun FirstRunLanguageScreen(theme: MimoTheme, selected: String, onSelect: (String) -> Unit) {
     Column(Modifier.fillMaxSize().padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center) {
