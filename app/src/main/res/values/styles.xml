@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.Mimo" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#D7AA55</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#101D35</item>
+        <item name="android:navigationBarColor">#080D18</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>
