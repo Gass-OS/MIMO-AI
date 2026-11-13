@@ -10,4 +10,5 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "MIMO-AI"
-include(":app")
+include(":app", ":llama-kt")
+project(":llama-kt").projectDir = file("libs/llama.kt/llama-kt")

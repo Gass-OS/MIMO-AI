@@ -164,9 +164,9 @@ private object MimoArabic {
         "Both model files passed SHA-256 verification. AI runtime integration is the next step." to "اجتاز الملفان التحقق من السلامة. الخطوة التالية هي ربط محركات الذكاء الاصطناعي.",
         "Download setup error: " to "حدث خطأ في إعداد التنزيل: ",
         "MIMO Brain file verified" to "تم التحقق من ملف عقل ميمو",
-        "The Brain file is verified. The on-device chat runtime still needs integration." to "تم التحقق من ملف العقل. ما زلنا بحاجة إلى ربط محرك المحادثة على الجهاز.",
+        "The Brain file is verified. MIMO will load it locally when you open chat." to "تم التحقق من ملف العقل. ما زلنا بحاجة إلى ربط محرك المحادثة على الجهاز.",
         "Approve the one-time download to install the verified MIMO components." to "وافق على التنزيل لمرة واحدة لتثبيت ملفات ميمو والتحقق منها.",
-        "Model file verified · chat runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك المحادثة ما زال مطلوباً",
+        "Model file verified · ready for local chat" to "تم التحقق من ملف النموذج · ربط محرك المحادثة ما زال مطلوباً",
         "Ready when you approve the download" to "جاهز عند موافقتك على التنزيل",
         "VERIFIED" to "تم التحقق", "MIMO Studio download is next" to "تنزيل استوديو ميمو هو التالي",
         "Model file verified · image runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك الصور ما زال مطلوباً",
@@ -276,6 +276,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
     var selectedPhoto by remember { mutableStateOf(prefs.getString("reference_photo_uri", null)) }
     val installer = remember(context) { ModelInstaller(context) }
+    val localEngine = remember(context) { MimoLocalEngine(context) }
     var wifiOnly by remember { mutableStateOf(prefs.getBoolean("wifi_only", true)) }
     var performanceId by remember { mutableStateOf(prefs.getString("performance_profile", installer.recommendedPerformanceProfile()) ?: installer.recommendedPerformanceProfile()) }
     var speechEnabled by remember { mutableStateOf(prefs.getBoolean("speech_enabled", true)) }
@@ -293,6 +294,8 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
     var studioVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.STUDIO)) }
     var installerStatus by remember { mutableStateOf(installer.deviceResources() + " | Wi-Fi-only downloads are enabled") }
+    var inferenceReady by remember { mutableStateOf(false) }
+    var inferenceStatus by remember { mutableStateOf("Checking installed MIMO Brain…") }
     var speechReady by remember { mutableStateOf(false) }
     val tts = remember(context) {
         TextToSpeech(context) { status -> speechReady = status == TextToSpeech.SUCCESS }
@@ -326,6 +329,26 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         }
     }
     val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
+
+    LaunchedEffect(brainVerified) {
+        inferenceReady = false
+        if (!brainVerified) {
+            inferenceStatus = "MIMO Brain is not verified yet. Finish the Brain installation first."
+        } else {
+            inferenceStatus = "Loading your existing MIMO Brain into the on-device engine…"
+            try {
+                localEngine.load()
+                inferenceReady = true
+                inferenceStatus = "Ready · running locally on this device"
+            } catch (error: Exception) {
+                inferenceStatus = "Local engine could not load Brain: ${error.message ?: error.javaClass.simpleName}"
+            }
+        }
+    }
+
+    DisposableEffect(localEngine) {
+        onDispose { localEngine.close() }
+    }
 
     LaunchedEffect(downloadStarted, downloadAttempt) {
         if (downloadStarted) {
@@ -512,7 +535,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                     catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
                 })
-                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak)
+                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak, engineReady = inferenceReady, engineStatus = inferenceStatus, onGenerate = { history, onToken -> localEngine.generate(history, onToken) })
             }
         }
     }
@@ -702,16 +725,63 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (String) -> Unit, speechEnabled: Boolean, autoSpeak: Boolean) {
+private fun ChatScreen(
+    theme: MimoTheme,
+    onSettings: () -> Unit,
+    onSpeak: (String) -> Unit,
+    speechEnabled: Boolean,
+    autoSpeak: Boolean,
+    engineReady: Boolean,
+    engineStatus: String,
+    onGenerate: suspend (List<ChatMessage>, (String) -> Unit) -> Unit
+) {
     val messages = remember { mutableStateListOf<ChatMessage>() }
     var input by remember { mutableStateOf("") }
+    var generating by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun sendMessage() {
+        val prompt = input.trim()
+        if (prompt.isEmpty() || generating) return
+        if (!engineReady) {
+            messages.add(ChatMessage(engineStatus, false))
+            input = ""
+            return
+        }
+        messages.add(ChatMessage(prompt, true))
+        input = ""
+        val history = messages.toList()
+        messages.add(ChatMessage("", false))
+        val responseIndex = messages.lastIndex
+        generating = true
+        scope.launch {
+            try {
+                onGenerate(history) { token ->
+                    val current = messages.getOrNull(responseIndex)?.text.orEmpty()
+                    messages[responseIndex] = ChatMessage(current + token, false)
+                }
+                val answer = messages.getOrNull(responseIndex)?.text.orEmpty()
+                if (answer.isBlank()) {
+                    messages[responseIndex] = ChatMessage("I couldn't generate a response. Please try again.", false)
+                } else if (autoSpeak) {
+                    onSpeak(answer)
+                }
+            } catch (error: Exception) {
+                val detail = error.message?.take(220) ?: error.javaClass.simpleName
+                messages[responseIndex] = ChatMessage("MIMO couldn't complete this reply: $detail", false)
+            } finally {
+                generating = false
+            }
+        }
+    }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             BrandMark(theme, 42)
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text("MIMO AI", fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = theme.accent)
-                Text("Your personal AI space", fontSize = 11.sp, color = theme.secondary)
+                Text(if (engineReady) "On-device Brain · ready" else engineStatus, fontSize = 10.sp, color = theme.secondary, maxLines = 2)
             }
             IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Settings", tint = theme.secondary) }
         }
@@ -720,20 +790,24 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 BrandMark(theme, 76)
                 Spacer(Modifier.height(18.dp))
                 Text(MimoIdentity.chatGreeting, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Color.White)
-                Text("Chat, explore ideas or create something amazing.", color = theme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                Text(if (engineReady) "Your private AI is running on this device." else engineStatus, color = theme.secondary, fontSize = 12.sp, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(25.dp))
                 SuggestionChip("Explain something", Icons.Outlined.Lightbulb, theme) { input = "Explain something interesting to me" }
                 SuggestionChip("Help me write", Icons.Outlined.EditNote, theme) { input = "Help me write something" }
-                SuggestionChip("Create an image", Icons.Outlined.Image, theme) { input = "Create an image: " }
+                SuggestionChip("Translate a message", Icons.Outlined.Translate, theme) { input = "Translate this into Tunisian Arabic: " }
             }
         } else {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(messages) { msg ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (msg.fromUser) Arrangement.End else Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
                         Surface(color = if (msg.fromUser) theme.accent.copy(alpha = 0.20f) else theme.surface, shape = RoundedCornerShape(18.dp)) {
-                            Text(msg.text, Modifier.padding(14.dp).widthIn(max = 290.dp), color = Color.White, fontSize = 14.sp)
+                            Text(
+                                if (!msg.fromUser && msg.text.isBlank() && generating) "MIMO is thinking…" else msg.text,
+                                Modifier.padding(14.dp).widthIn(max = 290.dp),
+                                color = Color.White, fontSize = 14.sp
+                            )
                         }
-                        if (!msg.fromUser && speechEnabled) {
+                        if (!msg.fromUser && msg.text.isNotBlank() && speechEnabled) {
                             IconButton(onClick = { onSpeak(msg.text) }) {
                                 Icon(Icons.Outlined.VolumeUp, "Read aloud", tint = theme.accent)
                             }
@@ -747,12 +821,9 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                 .border(1.dp, theme.accent.copy(alpha = 0.24f), RoundedCornerShape(24.dp)).padding(horizontal = 8.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { messages.add(ChatMessage(MimoIdentity.imageGreeting, false)) }) {
-                Icon(Icons.Outlined.AddPhotoAlternate, "Image generation", tint = theme.accent)
-            }
             BasicTextField(
                 value = input, onValueChange = { input = it },
-                modifier = Modifier.weight(1f).padding(horizontal = 6.dp),
+                modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
                 textStyle = LocalTextStyle.current.copy(color = Color.White, fontSize = 14.sp),
                 decorationBox = { inner ->
                     Box {
@@ -761,16 +832,16 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (Strin
                     }
                 }
             )
-            IconButton(onClick = {
-                if (input.isNotBlank()) {
-                    messages.add(ChatMessage(input.trim(), true))
-                    messages.add(ChatMessage(MimoIdentity.previewReply, false))
-                    if (autoSpeak) onSpeak(MimoIdentity.previewReply)
-                    input = ""
-                }
-            }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
+            IconButton(onClick = { sendMessage() }, enabled = !generating && input.isNotBlank() && engineReady) {
+                Icon(Icons.Outlined.Send, "Send", tint = if (!generating && engineReady) theme.accent else theme.secondary)
+            }
         }
-        Text("Preview interface · AI engines not connected yet", Modifier.fillMaxWidth().padding(top = 8.dp), color = theme.secondary.copy(alpha = 0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        Text(
+            if (engineReady) "Private on-device inference · no cloud required"
+            else engineStatus,
+            Modifier.fillMaxWidth().padding(top = 8.dp),
+            color = theme.secondary.copy(alpha = 0.75f), fontSize = 10.sp, textAlign = TextAlign.Center
+        )
     }
 }
 
