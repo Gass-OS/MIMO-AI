@@ -54,7 +54,10 @@ class MimoDownloadService : Service() {
                 val task = launch { runBrainDownload(wifiOnly) }
                 downloadJob = task
                 task.join()
-                if (request == latestRequest) stopSelf()
+                if (request == latestRequest) {
+                    stopForeground(STOP_FOREGROUND_DETACH)
+                    stopSelf()
+                }
             }
         }
         return START_STICKY
@@ -68,7 +71,6 @@ class MimoDownloadService : Service() {
                 val message = "At least 3 GB of free internal app storage is required before starting MIMO Brain."
                 state.edit().putString("status", message).apply()
                 updateNotification(message, 0, false)
-                stopSelf()
                 return
             }
             val success = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
