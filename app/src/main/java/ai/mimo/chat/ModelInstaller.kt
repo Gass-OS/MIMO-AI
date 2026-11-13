@@ -73,6 +73,12 @@ class ModelInstaller(private val context: Context) {
                     current.status == DownloadManager.STATUS_PAUSED)) return previousId
         }
 
+        val root = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+        val modelDirectory = File(root, "mimo-models")
+        if (!modelDirectory.exists() && !modelDirectory.mkdirs()) {
+            throw IllegalStateException("Unable to create the model download directory")
+        }
+
         val request = DownloadManager.Request(Uri.parse(model.url))
             .setTitle(model.displayName)
             .setDescription("Downloading and verifying MIMO components")
@@ -114,6 +120,50 @@ class ModelInstaller(private val context: Context) {
             null
         } finally {
             cursor?.close()
+        }
+    }
+
+    /**
+     * Resumes an existing DownloadManager transfer when possible, waits for the
+     * real transfer state, and verifies the final file before returning true.
+     * Cancelling this coroutine does not cancel the persisted DownloadManager job.
+     */
+    suspend fun downloadAndVerify(
+        model: Model,
+        wifiOnly: Boolean = true,
+        onProgress: (Transfer?) -> Unit = {}
+    ): Boolean {
+        if (isVerified(model)) {
+            onProgress(null)
+            return true
+        }
+
+        var id = savedDownloadId(model)
+        var previous = if (id != INVALID_ID) query(id) else null
+        if (previous?.status == DownloadManager.STATUS_SUCCESSFUL) {
+            if (verify(model, id)) {
+                onProgress(previous)
+                return true
+            }
+            id = INVALID_ID
+        }
+        if (previous == null || (previous.status != DownloadManager.STATUS_PENDING &&
+                    previous.status != DownloadManager.STATUS_RUNNING &&
+                    previous.status != DownloadManager.STATUS_PAUSED)) {
+            id = enqueue(model, wifiOnly)
+        }
+
+        if (id == COMPLETED_ALREADY_INSTALLED) return isVerified(model)
+        while (true) {
+            val transfer = query(id) ?: return false
+            onProgress(transfer)
+            when (transfer.status) {
+                DownloadManager.STATUS_SUCCESSFUL -> return verify(model, id)
+                DownloadManager.STATUS_FAILED -> return false
+                DownloadManager.STATUS_PENDING,
+                DownloadManager.STATUS_RUNNING,
+                DownloadManager.STATUS_PAUSED -> kotlinx.coroutines.delay(1000)
+            }
         }
     }
 
