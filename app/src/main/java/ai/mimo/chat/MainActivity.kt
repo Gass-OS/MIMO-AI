@@ -361,35 +361,8 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     }
                 }
                 brainProgress = 1f
-                if (!studioVerified) {
-                    installerStatus = "MIMO Brain file verified. Downloading MIMO Studio…"
-                    studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
-                        if (transfer != null) {
-                            studioDownloadedBytes = transfer.downloadedBytes
-                            studioTotalBytes = transfer.totalBytes
-                            if (transfer.totalBytes > 0L) {
-                                studioProgress = transfer.progress
-                                installerStatus = "MIMO Studio · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
-                            } else {
-                                installerStatus = when (transfer.status) {
-                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
-                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
-                                    android.app.DownloadManager.STATUS_RUNNING -> "MIMO Studio · Connected; preparing download…"
-                                    else -> "MIMO Studio · Checking download…"
-                                }
-                            }
-                        }
-                    }
-                    if (!studioVerified) {
-                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.STUDIO))
-                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
-                            "MIMO Studio download failed: ${installer.describeReason(failed)} (Android code ${failed.reason}). Brain remains verified."
-                        } else "MIMO Studio download failed. MIMO Brain remains verified; retry to continue."
-                        return@LaunchedEffect
-                    }
-                }
-                studioProgress = 1f
-                installerStatus = "Both model files passed SHA-256 verification. AI runtime integration is the next step."
+                installerStatus = "MIMO Brain downloaded, SHA-256 verified, and saved in MIMO's private app storage. MIMO Studio is optional and will not block Brain setup."
+
             } catch (error: Exception) {
                 installerStatus = "Download setup error: ${error.message ?: "unknown error"}"
             }
