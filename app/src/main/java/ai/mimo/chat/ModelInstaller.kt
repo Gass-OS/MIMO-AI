@@ -70,7 +70,7 @@ class ModelInstaller(private val context: Context) {
         val ramGb = memory.totalMem / 1_073_741_824.0
         val cores = Runtime.getRuntime().availableProcessors()
         return when {
-            ramGb >= 8.0 && cores >= 8 -> "high"
+            ramGb >= 8.0 -> "high"
             ramGb < 2.0 || cores <= 2 -> "low"
             else -> "medium"
         }
@@ -84,7 +84,7 @@ class ModelInstaller(private val context: Context) {
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: Build.CPU_ABI
         val cores = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
         val tier = when {
-            ramGb >= 8.0 && cores >= 8 -> "Fort · 8 GB+"
+            ramGb >= 8.0 -> "Fort · 8 GB+"
             ramGb < 2.0 || cores <= 2 -> "Low · 2 GB"
             else -> "Medium · 4 GB"
         }
