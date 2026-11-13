@@ -219,6 +219,16 @@ class ModelInstaller(private val context: Context) {
 
     fun isVerified(model: Model): Boolean = existingVerifiedFile(model) != null
 
+    fun resetTransferForNetworkChange(model: Model) {
+        if (isVerified(model)) return
+        val id = savedDownloadId(model)
+        if (id != INVALID_ID && id != COMPLETED_ALREADY_INSTALLED) {
+            try { manager.remove(id) } catch (_: Exception) { }
+        }
+        prefs.edit().remove("download_${model.name}").apply()
+        modelFile(model).takeIf { it.exists() }?.delete()
+    }
+
     fun savedDownloadId(model: Model): Long =
         prefs.getLong("download_${model.name}", INVALID_ID)
 
