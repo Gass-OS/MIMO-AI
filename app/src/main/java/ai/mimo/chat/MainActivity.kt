@@ -32,9 +32,9 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.TextOverflow
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.platform.LocalTextStyle
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.CompositionLocalProvider
