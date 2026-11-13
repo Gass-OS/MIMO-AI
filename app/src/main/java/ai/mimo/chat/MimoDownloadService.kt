@@ -32,6 +32,7 @@ class MimoDownloadService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var downloadJob: Job? = null
+    @Volatile private var latestRequest: Int = 0
     private lateinit var state: android.content.SharedPreferences
     private lateinit var installer: ModelInstaller
 
@@ -45,10 +46,15 @@ class MimoDownloadService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, buildNotification("Preparing MIMO Brain", 0, false))
         if (intent?.action == ACTION_START || intent == null) {
+            val request = ++latestRequest
             val wifiOnly = intent?.getBooleanExtra(EXTRA_WIFI_ONLY, true) ?: true
             scope.launch {
                 downloadJob?.cancelAndJoin()
-                downloadJob = launch { runBrainDownload(wifiOnly) }
+                if (request != latestRequest) return@launch
+                val task = launch { runBrainDownload(wifiOnly) }
+                downloadJob = task
+                task.join()
+                if (request == latestRequest) stopSelf()
             }
         }
         return START_STICKY
@@ -75,7 +81,7 @@ class MimoDownloadService : Service() {
                             "MIMO Brain download failed: " + installer.describeReason(transfer)
                         transfer.totalBytes <= 0L -> "MIMO Brain connected · waiting for download data…"
                         else -> "MIMO Brain · $percent% · " +
-                            formatModelBytes(transfer.downloadedBytes) + " / " + formatModelBytes(transfer.totalBytes)
+                            formatBytes(transfer.downloadedBytes) + " / " + formatBytes(transfer.totalBytes)
                     }
                     state.edit()
                         .putLong("brain_downloaded", transfer.downloadedBytes)
@@ -105,9 +111,14 @@ class MimoDownloadService : Service() {
             val message = "Download service error: " + (error.message ?: error.javaClass.simpleName)
             state.edit().putString("status", message).apply()
             updateNotification(message, 0, false)
-        } finally {
-            stopSelf()
         }
+    }
+
+    private fun formatBytes(bytes: Long): String {
+        if (bytes < 0L) return "Unknown size"
+        val gb = bytes / 1_000_000_000.0
+        return if (gb >= 1.0) String.format(java.util.Locale.US, "%.2f GB", gb)
+        else String.format(java.util.Locale.US, "%.1f MB", bytes / 1_000_000.0)
     }
 
     private fun createNotificationChannel() {
