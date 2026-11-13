@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 private val LocalMimoArabic = androidx.compose.runtime.staticCompositionLocalOf { false }
 
@@ -216,7 +217,7 @@ private val themes = listOf(
     MimoTheme("black", "Pure Black", Color(0xFF050608), Color(0xFF15171B), Color(0xFFE6E8ED), Color(0xFFAEB4C0))
 )
 
-private data class ChatMessage(val text: String, val fromUser: Boolean)
+data class ChatMessage(val text: String, val fromUser: Boolean)
 
 private data class MimoPerformanceProfile(
     val id: String, val title: String, val description: String,
