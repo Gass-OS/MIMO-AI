@@ -150,7 +150,29 @@ private object MimoArabic {
         "Hi 👋 I'm MIMO AI, your offline AI assistant. How can I help you today?" to "أهلاً 👋 أنا ميمو AI، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟",
         "Hi 👋 I'm MIMO AI. Tell me what you'd like me to create. Your image will appear here in our chat." to "أهلاً 👋 أنا ميمو AI. أخبرني بالصورة التي تريد إنشاءها وستظهر هنا في محادثتنا.",
         "Thanks for your message! I'm still being connected to my on-device AI engine. This preview can show the interface, but real AI replies aren't available yet." to "شكراً على رسالتك! ما زلنا نربط محرك الذكاء الاصطناعي على الجهاز. هذه معاينة للواجهة، والردود الذكية الفعلية غير متاحة بعد.",
-        "I'm getting my creative tools ready. Image creation isn't available in this preview yet." to "أجهّز أدواتي الإبداعية. إنشاء الصور غير متاح في هذه المعاينة بعد."
+        "I'm getting my creative tools ready. Image creation isn't available in this preview yet." to "أجهّز أدواتي الإبداعية. إنشاء الصور غير متاح في هذه المعاينة بعد.",
+        "Large downloads require your approval. Wi-Fi only is enabled by default." to "التنزيلات كبيرة وتتطلب موافقتك. التنزيل عبر Wi‑Fi فقط مفعّل افتراضياً.",
+        "At least 15 GB of free storage is required before starting these downloads." to "يلزم توفير 15 جيجابايت على الأقل قبل بدء التنزيل.",
+        "At least 15 GB of free storage is required. Free up space and try again." to "يلزم توفير 15 جيجابايت على الأقل. أفرغ بعض المساحة ثم أعد المحاولة.",
+        "Downloading MIMO Brain…" to "جارٍ تنزيل عقل ميمو…",
+        "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded" to "عقل ميمو · تم تنزيل ${(transfer.progress * 100).toInt()}٪",
+        "MIMO Brain download failed. Check your connection and try again." to "فشل تنزيل عقل ميمو. تحقّق من الاتصال ثم أعد المحاولة.",
+        "MIMO Brain file verified. Downloading MIMO Studio…" to "تم التحقق من ملف عقل ميمو. جارٍ تنزيل استوديو ميمو…",
+        "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded" to "استوديو ميمو · تم تنزيل ${(transfer.progress * 100).toInt()}٪",
+        "MIMO Studio download failed. MIMO Brain remains safely verified; retry to continue." to "فشل تنزيل استوديو ميمو. ملف عقل ميمو محفوظ وموثّق؛ أعد المحاولة للمتابعة.",
+        "Both model files passed SHA-256 verification. AI runtime integration is the next step." to "اجتاز الملفان التحقق من السلامة. الخطوة التالية هي ربط محركات الذكاء الاصطناعي.",
+        "Download setup error: ${error.message ?: "unknown error"}" to "حدث خطأ في إعداد التنزيل: ${error.message ?: "خطأ غير معروف"}",
+        "MIMO Brain file verified" to "تم التحقق من ملف عقل ميمو",
+        "The Brain file is verified. The on-device chat runtime still needs integration." to "تم التحقق من ملف العقل. ما زلنا بحاجة إلى ربط محرك المحادثة على الجهاز.",
+        "Approve the one-time download to install the verified MIMO components." to "وافق على التنزيل لمرة واحدة لتثبيت ملفات ميمو والتحقق منها.",
+        "Model file verified · chat runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك المحادثة ما زال مطلوباً",
+        "Ready when you approve the download" to "جاهز عند موافقتك على التنزيل",
+        "VERIFIED" to "تم التحقق", "MIMO Studio download is next" to "تنزيل استوديو ميمو هو التالي",
+        "Model file verified · image runtime integration pending" to "تم التحقق من ملف النموذج · ربط محرك الصور ما زال مطلوباً",
+        "Starts after MIMO Brain is verified" to "يبدأ بعد التحقق من عقل ميمو",
+        "Resume / retry downloads" to "استئناف / إعادة التنزيل", "Start downloads · about 9.5 GB" to "بدء التنزيل · حوالي 9.5 جيجابايت",
+        "Downloads use Wi-Fi by default, resume through Android Download Manager, and are verified before being marked complete. This installs model files only; AI engines are a separate integration step." to "يستخدم التنزيل Wi‑Fi افتراضياً، ويمكن استئنافه عبر مدير تنزيل أندرويد. يتم التحقق من الملفات قبل اعتمادها. هذه الخطوة تثبّت الملفات فقط؛ أما محركات الذكاء الاصطناعي فتحتاج إلى ربط منفصل."
+
     )
     fun translate(value: String): String = phrases[value] ?: value
 }
@@ -231,6 +253,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     var speechRate by remember { mutableFloatStateOf(prefs.getFloat("speech_rate", 1.0f)) }
     val installer = remember(context) { ModelInstaller(context) }
     var downloadStarted by remember { mutableStateOf(prefs.getBoolean("model_download_started", false)) }
+    var downloadAttempt by remember { mutableIntStateOf(0) }
     var brainProgress by remember { mutableFloatStateOf(0f) }
     var studioProgress by remember { mutableFloatStateOf(0f) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
@@ -270,7 +293,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
     val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
 
-    LaunchedEffect(downloadStarted) {
+    LaunchedEffect(downloadStarted, downloadAttempt) {
         if (downloadStarted) {
             try {
                 if (!installer.hasRequiredSpace()) {
@@ -374,6 +397,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                         } else {
                             prefs.edit().putBoolean("model_download_started", true).apply()
                             downloadStarted = true
+                            downloadAttempt++
                         }
                     },
                     onContinuePreview = { page = "chat" }
