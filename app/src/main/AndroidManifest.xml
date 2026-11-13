@@ -33,6 +33,10 @@
         android:icon="@drawable/mimo_logo"
         android:theme="@style/Theme.Mimo"
         android:usesCleartextTraffic="false">
+        <service
+            android:name=".MimoDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
