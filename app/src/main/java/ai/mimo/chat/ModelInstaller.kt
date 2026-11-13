@@ -120,21 +120,13 @@ class ModelInstaller(private val context: Context) {
     suspend fun verify(model: Model, id: Long): Boolean = withContext(Dispatchers.IO) {
         val transfer = query(id)
         if (transfer?.status != DownloadManager.STATUS_SUCCESSFUL) return@withContext false
-        val uri = manager.getUriForDownloadedFile(id) ?: return@withContext false
+        // The request writes directly to this app-specific destination. Do not
+        // copy from getUriForDownloadedFile(): that URI points to the same file.
+        if (manager.getUriForDownloadedFile(id) == null) return@withContext false
         val file = modelFile(model)
-        // DownloadManager's completed URI is copied to the stable app-private model path
-        // only after transfer success; this also avoids trusting a stale partial file.
-        val source = when (uri.scheme) {
-            "file" -> File(uri.path ?: return@withContext false)
-            else -> context.contentResolver.openInputStream(uri)?.use { input ->
-                file.parentFile?.mkdirs()
-                file.outputStream().use { output -> input.copyTo(output) }
-                file
-            }
-        }
-        if (!source.isFile || source.length() <= 0L) return@withContext false
+        if (!file.isFile || file.length() <= 0L) return@withContext false
         val digest = MessageDigest.getInstance("SHA-256")
-        FileInputStream(source).use { input ->
+        FileInputStream(file).use { input ->
             val buffer = ByteArray(1024 * 1024)
             while (true) {
                 val count = input.read(buffer)
@@ -145,7 +137,6 @@ class ModelInstaller(private val context: Context) {
         val actual = digest.digest().joinToString("") { "%02x".format(it) }
         val valid = actual.equals(model.sha256, ignoreCase = true)
         if (valid) {
-            if (source != file) source.copyTo(file, overwrite = true)
             prefs.edit().putBoolean("verified_${model.name}", true).apply()
         } else {
             file.delete()
