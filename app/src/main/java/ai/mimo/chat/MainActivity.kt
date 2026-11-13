@@ -259,6 +259,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     val installer = remember(context) { ModelInstaller(context) }
     var downloadStarted by remember { mutableStateOf(prefs.getBoolean("model_download_started", false)) }
     var downloadAttempt by remember { mutableIntStateOf(0) }
+    var showExitDialog by remember { mutableStateOf(false) }
     var brainProgress by remember { mutableFloatStateOf(0f) }
     var studioProgress by remember { mutableFloatStateOf(0f) }
     var brainVerified by remember { mutableStateOf(installer.isVerified(ModelInstaller.Model.BRAIN)) }
@@ -308,9 +309,18 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 if (!brainVerified) {
                     installerStatus = "Downloading MIMO Brain…"
                     brainVerified = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
-                        if (transfer != null && transfer.totalBytes > 0L) {
-                            brainProgress = transfer.progress
-                            installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded"
+                        if (transfer != null) {
+                            if (transfer.totalBytes > 0L) {
+                                brainProgress = transfer.progress
+                                installerStatus = "MIMO Brain · ${(transfer.progress * 100).toInt()}% downloaded"
+                            } else {
+                                installerStatus = when (transfer.status) {
+                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · Waiting for network…"
+                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Brain · Download paused; waiting to resume…"
+                                    android.app.DownloadManager.STATUS_RUNNING -> "MIMO Brain · Connected; preparing download…"
+                                    else -> "MIMO Brain · Checking download…"
+                                }
+                            }
                         }
                     }
                     if (!brainVerified) {
@@ -322,9 +332,18 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                 if (!studioVerified) {
                     installerStatus = "MIMO Brain file verified. Downloading MIMO Studio…"
                     studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
-                        if (transfer != null && transfer.totalBytes > 0L) {
-                            studioProgress = transfer.progress
-                            installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded"
+                        if (transfer != null) {
+                            if (transfer.totalBytes > 0L) {
+                                studioProgress = transfer.progress
+                                installerStatus = "MIMO Studio · ${(transfer.progress * 100).toInt()}% downloaded"
+                            } else {
+                                installerStatus = when (transfer.status) {
+                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · Waiting for network…"
+                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Studio · Download paused; waiting to resume…"
+                                    android.app.DownloadManager.STATUS_RUNNING -> "MIMO Studio · Connected; preparing download…"
+                                    else -> "MIMO Studio · Checking download…"
+                                }
+                            }
                         }
                     }
                     if (!studioVerified) {
@@ -340,7 +359,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         }
     }
 
-    BackHandler(enabled = true) { (context as? Activity)?.finishAndRemoveTask() }
+    BackHandler(enabled = true) { showExitDialog = true }
     CompositionLocalProvider(
         LocalMimoArabic provides language.startsWith("ar"),
         LocalLayoutDirection provides if (language.startsWith("ar")) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -354,6 +373,22 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         Box(Modifier.fillMaxSize().background(
             Brush.verticalGradient(listOf(theme.surface.copy(alpha = 0.72f), theme.background, theme.background))
         )) {
+            if (showExitDialog) {
+                AlertDialog(
+                    onDismissRequest = { showExitDialog = false },
+                    title = { Text("Exit MIMO AI", color = Color.White, fontWeight = FontWeight.Bold) },
+                    text = { Text("Are you sure you want to close MIMO AI?", color = theme.secondary) },
+                    confirmButton = {
+                        TextButton(onClick = { (context as? Activity)?.finishAndRemoveTask() }) {
+                            Text("Exit", color = theme.accent, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showExitDialog = false }) { Text("Stay", color = theme.secondary) }
+                    },
+                    containerColor = theme.surface
+                )
+            }
             if (showWelcome) {
                 WelcomeScreen(theme, onStart = {
                     prefs.edit().putBoolean("welcome_seen", true).apply()
@@ -396,6 +431,16 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     studioReady = studioVerified,
                     downloadStarted = downloadStarted,
                     statusMessage = installerStatus,
+                    language = language,
+                    onLanguage = {
+                        language = it
+                        prefs.edit().putString("language", it).apply()
+                        tts.language = when (it) {
+                            "ar-TN" -> Locale("ar", "TN")
+                            "fr" -> Locale.FRENCH
+                            else -> Locale.ENGLISH
+                        }
+                    },
                     onStartDownloads = {
                         if (!installer.hasRequiredSpace()) {
                             installerStatus = "At least 15 GB of free storage is required. Free up space and try again."
@@ -941,6 +986,8 @@ private fun SetupBootScreen(
     studioReady: Boolean,
     downloadStarted: Boolean,
     statusMessage: String,
+    language: String,
+    onLanguage: (String) -> Unit,
     onStartDownloads: () -> Unit,
     onContinuePreview: () -> Unit
 ) {
@@ -951,6 +998,7 @@ private fun SetupBootScreen(
         "Smart setup · MIMO prepares chat first, then continues the creative tools in the background."
     )
     var tipIndex by remember { mutableIntStateOf(0) }
+    var languageMenuExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(4200)
@@ -977,6 +1025,18 @@ private fun SetupBootScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Box {
+                    IconButton(onClick = { languageMenuExpanded = true }) {
+                        Icon(Icons.Outlined.MoreVert, contentDescription = "Language menu", tint = blue)
+                    }
+                    DropdownMenu(expanded = languageMenuExpanded, onDismissRequest = { languageMenuExpanded = false }) {
+                        DropdownMenuItem(text = { Text("العربية") }, onClick = { onLanguage("ar-TN"); languageMenuExpanded = false })
+                        DropdownMenuItem(text = { Text("English") }, onClick = { onLanguage("en"); languageMenuExpanded = false })
+                        DropdownMenuItem(text = { Text("Français") }, onClick = { onLanguage("fr"); languageMenuExpanded = false })
+                    }
+                }
+            }
             BrandMark(theme.copy(accent = blue, surface = Color(0xFF102A49)), 82)
             Spacer(Modifier.height(18.dp))
             Text("MIMO AI", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
@@ -1009,14 +1069,18 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.Psychology, null, tint = blue, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Brain", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (brainReady) "READY" else "${(safeBrain * 100).toInt()}%", color = blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(if (brainReady) "READY" else if (downloadStarted && safeBrain <= 0f) "…" else "${(safeBrain * 100).toInt()}%", color = blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
-                    LinearProgressIndicator(
-                        progress = { if (brainReady) 1f else safeBrain },
-                        modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape),
-                        color = blue, trackColor = Color(0xFF1A2B40)
-                    )
+                    if (!brainReady && downloadStarted && safeBrain <= 0f) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape), color = blue, trackColor = Color(0xFF1A2B40))
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { if (brainReady) 1f else safeBrain },
+                            modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape),
+                            color = blue, trackColor = Color(0xFF1A2B40)
+                        )
+                    }
                     Text(
                         if (brainReady) "Model file verified · chat runtime integration pending" else if (downloadStarted) statusMessage else "Ready when you approve the download",
                         color = Color(0xFF9FB5CE), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp)
@@ -1031,14 +1095,18 @@ private fun SetupBootScreen(
                         Icon(Icons.Outlined.AutoAwesome, null, tint = Color(0xFF8CAEFF), modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(9.dp))
                         Text("MIMO Studio", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(if (studioReady) "VERIFIED" else if (brainReady) "${(safeStudio * 100).toInt()}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(if (studioReady) "VERIFIED" else if (brainReady && downloadStarted && safeStudio <= 0f) "…" else if (brainReady) "${(safeStudio * 100).toInt()}%" else "QUEUED", color = Color(0xFF9BB7FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
-                    LinearProgressIndicator(
-                        progress = { if (safeStudio >= 1f) 1f else safeStudio },
-                        modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape),
-                        color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40)
-                    )
+                    if (brainReady && !studioReady && downloadStarted && safeStudio <= 0f) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape), color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40))
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { if (safeStudio >= 1f) 1f else safeStudio },
+                            modifier = Modifier.fillMaxWidth().height(7.dp).clip(CircleShape),
+                            color = Color(0xFF8CAEFF), trackColor = Color(0xFF1A2B40)
+                        )
+                    }
                     Text(
                         if (studioReady) "Model file verified · image runtime integration pending"
                         else if (brainReady) "MIMO Studio download is next"
