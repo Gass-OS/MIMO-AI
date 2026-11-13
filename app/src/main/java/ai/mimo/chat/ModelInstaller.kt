@@ -149,7 +149,7 @@ class ModelInstaller(private val context: Context) {
 
                     try {
                         val response = connection.responseCode
-                        if (response == HttpURLConnection.HTTP_REQUESTED_RANGE_NOT_SATISFIABLE && offset > 0L) {
+                        if (response == 416 && offset > 0L) {
                             partial.delete()
                             continue
                         }
