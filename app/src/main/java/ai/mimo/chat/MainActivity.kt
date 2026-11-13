@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
@@ -52,6 +54,20 @@ private val themes = listOf(
 
 private data class ChatMessage(val text: String, val fromUser: Boolean)
 
+private data class MimoPerformanceProfile(
+    val id: String, val title: String, val description: String,
+    val cpuThreads: Int, val gpuOffloadPercent: Int, val imageSize: Int
+)
+
+private object MimoRuntimeConfig {
+    val profiles = listOf(
+        MimoPerformanceProfile("low", "Low / Eco", "Save battery, heat and memory", 2, 0, 512),
+        MimoPerformanceProfile("medium", "Medium / Balanced", "Recommended for most phones", 4, 35, 640),
+        MimoPerformanceProfile("high", "High / Performance", "Use more available CPU/GPU resources", 8, 70, 768)
+    )
+    @Volatile var selected: MimoPerformanceProfile = profiles[1]
+}
+
 class MainActivity : ComponentActivity() {
     @Suppress("DEPRECATION")
     private fun enableImmersiveMode() {
@@ -93,6 +109,27 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
     }
     var selectedPhoto by remember { mutableStateOf(prefs.getString("reference_photo_uri", null)) }
     var wifiOnly by remember { mutableStateOf(prefs.getBoolean("wifi_only", true)) }
+    var performanceId by remember { mutableStateOf(prefs.getString("performance_profile", "medium") ?: "medium") }
+    var speechEnabled by remember { mutableStateOf(prefs.getBoolean("speech_enabled", true)) }
+    var autoSpeak by remember { mutableStateOf(prefs.getBoolean("auto_speak", false)) }
+    var speechRate by remember { mutableFloatStateOf(prefs.getFloat("speech_rate", 1.0f)) }
+    var speechReady by remember { mutableStateOf(false) }
+    val tts = remember(context) {
+        TextToSpeech(context) { status -> speechReady = status == TextToSpeech.SUCCESS }
+    }
+    DisposableEffect(tts) {
+        onDispose { tts.stop(); tts.shutdown() }
+    }
+    val speakText: (String) -> Unit = { spoken ->
+        if (speechEnabled && speechReady) {
+            tts.language = Locale.getDefault()
+            tts.setSpeechRate(speechRate)
+            tts.speak(spoken, TextToSpeech.QUEUE_FLUSH, null, "mimo-${System.currentTimeMillis()}")
+        } else if (!speechReady) {
+            Toast.makeText(context, "Android speech engine is not ready. Check Text-to-speech settings.", Toast.LENGTH_SHORT).show()
+        }
+    }
+    MimoRuntimeConfig.selected = MimoRuntimeConfig.profiles.firstOrNull { it.id == performanceId } ?: MimoRuntimeConfig.profiles[1]
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         locationGranted = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -125,10 +162,24 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     showWelcome = false
                 })
             } else when (page) {
-                "settings" -> SettingsScreen(theme, themeId, wifiOnly, onWifiOnly = {
+                "settings" -> SettingsScreen(theme, themeId, wifiOnly, performanceId, speechEnabled, autoSpeak, speechRate,
+                    onWifiOnly = {
                     wifiOnly = it
                     prefs.edit().putBoolean("wifi_only", it).apply()
-                }, onTheme = {
+                }, onPerformance = {
+                    performanceId = it
+                    prefs.edit().putString("performance_profile", it).apply()
+                }, onSpeechEnabled = {
+                    speechEnabled = it
+                    prefs.edit().putBoolean("speech_enabled", it).apply()
+                }, onAutoSpeak = {
+                    autoSpeak = it
+                    prefs.edit().putBoolean("auto_speak", it).apply()
+                }, onSpeechRate = {
+                    speechRate = it
+                    prefs.edit().putFloat("speech_rate", it).apply()
+                }, onTestSpeech = { speakText("Hi! I'm MIMO AI. Your offline assistant is ready to speak.") },
+                    onTheme = {
                     themeId = it
                     prefs.edit().putString("theme", it).apply()
                 }, onBack = { page = "chat" }, onManageModels = { page = "models" },
@@ -148,7 +199,7 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                     catch (_: Exception) { Toast.makeText(context, "Unable to open link", Toast.LENGTH_SHORT).show() }
                 })
-                else -> ChatScreen(theme, onSettings = { page = "settings" })
+                else -> ChatScreen(theme, onSettings = { page = "settings" }, onSpeak = speakText, speechEnabled = speechEnabled, autoSpeak = autoSpeak)
             }
         }
     }
@@ -210,7 +261,7 @@ private fun InfoFeature(theme: MimoTheme, icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
+private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit, onSpeak: (String) -> Unit, speechEnabled: Boolean, autoSpeak: Boolean) {
     val messages = remember { mutableStateListOf<ChatMessage>() }
     var input by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -237,9 +288,14 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
         } else {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(messages) { msg ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (msg.fromUser) Arrangement.End else Arrangement.Start) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (msg.fromUser) Arrangement.End else Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
                         Surface(color = if (msg.fromUser) theme.accent.copy(alpha = 0.20f) else theme.surface, shape = RoundedCornerShape(18.dp)) {
                             Text(msg.text, Modifier.padding(14.dp).widthIn(max = 290.dp), color = Color.White, fontSize = 14.sp)
+                        }
+                        if (!msg.fromUser && speechEnabled) {
+                            IconButton(onClick = { onSpeak(msg.text) }) {
+                                Icon(Icons.Outlined.VolumeUp, "Read aloud", tint = theme.accent)
+                            }
                         }
                     }
                 }
@@ -268,6 +324,7 @@ private fun ChatScreen(theme: MimoTheme, onSettings: () -> Unit) {
                 if (input.isNotBlank()) {
                     messages.add(ChatMessage(input.trim(), true))
                     messages.add(ChatMessage(MimoIdentity.previewReply, false))
+                    if (autoSpeak) onSpeak(MimoIdentity.previewReply)
                     input = ""
                 }
             }) { Icon(Icons.Outlined.Send, "Send", tint = theme.accent) }
@@ -295,7 +352,11 @@ private fun SuggestionChip(label: String, icon: androidx.compose.ui.graphics.vec
 
 @Composable
 private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean,
-    onWifiOnly: (Boolean) -> Unit, onTheme: (String) -> Unit, onBack: () -> Unit,
+    performanceId: String, speechEnabled: Boolean, autoSpeak: Boolean, speechRate: Float,
+    onWifiOnly: (Boolean) -> Unit, onPerformance: (String) -> Unit,
+    onSpeechEnabled: (Boolean) -> Unit, onAutoSpeak: (Boolean) -> Unit,
+    onSpeechRate: (Float) -> Unit, onTestSpeech: () -> Unit,
+    onTheme: (String) -> Unit, onBack: () -> Unit,
     onManageModels: () -> Unit, onPermissions: () -> Unit, onAbout: () -> Unit, onProjects: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -344,7 +405,53 @@ private fun SettingsScreen(theme: MimoTheme, selected: String, wifiOnly: Boolean
                     Switch(checked = wifiOnly, onCheckedChange = onWifiOnly)
                 }
                 SettingsRow(Icons.Outlined.Language, "Language", "English · language selector planned", theme)
-                SettingsRow(Icons.Outlined.BatteryFull, "Battery and performance", "AI engines will manage memory independently", theme)
+                SettingsHeader("PERFORMANCE PROFILE", theme)
+                Text("Choose how much processing power future local AI engines may use. The selected profile is saved for the chat and image engines.", color = theme.secondary, fontSize = 12.sp, lineHeight = 17.sp)
+                MimoRuntimeConfig.profiles.forEach { profile ->
+                    Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(14.dp))
+                        .background(theme.surface).border(if (performanceId == profile.id) 2.dp else 1.dp,
+                            if (performanceId == profile.id) theme.accent else Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+                        .clickable { onPerformance(profile.id) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(when (profile.id) {
+                            "low" -> Icons.Outlined.BatterySaver
+                            "high" -> Icons.Outlined.Speed
+                            else -> Icons.Outlined.Tune
+                        }, null, tint = theme.accent, modifier = Modifier.size(23.dp))
+                        Spacer(Modifier.width(11.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(profile.title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text(profile.description + " · " + profile.cpuThreads + " CPU threads · " + profile.imageSize + "px image target", color = theme.secondary, fontSize = 10.sp)
+                        }
+                        if (performanceId == profile.id) Icon(Icons.Outlined.CheckCircle, null, tint = theme.accent)
+                    }
+                }
+                Text("GPU offload is a target preference (" + MimoRuntimeConfig.selected.gpuOffloadPercent + "%). Actual acceleration depends on device drivers and AI backend; CPU fallback is required.", color = theme.secondary, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 5.dp))
+                SettingsHeader("TEXT TO SPEECH", theme)
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.VolumeUp, null, tint = theme.accent)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("MIMO speaks replies", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("Use the Android installed speech engine", color = theme.secondary, fontSize = 10.sp)
+                    }
+                    Switch(checked = speechEnabled, onCheckedChange = onSpeechEnabled)
+                }
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Auto-read assistant replies", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("Speak new assistant messages automatically", color = theme.secondary, fontSize = 10.sp)
+                    }
+                    Switch(checked = autoSpeak, onCheckedChange = onAutoSpeak, enabled = speechEnabled)
+                }
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(theme.surface).padding(12.dp)) {
+                    Text("Speech speed · " + String.format(Locale.getDefault(), "%.1f", speechRate) + "×", color = Color.White, fontSize = 13.sp)
+                    Slider(value = speechRate, onValueChange = onSpeechRate, valueRange = 0.7f..1.3f, enabled = speechEnabled)
+                    OutlinedButton(onClick = onTestSpeech, enabled = speechEnabled, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Outlined.PlayArrow, null)
+                        Spacer(Modifier.width(7.dp))
+                        Text("Test MIMO voice")
+                    }
+                }
             }
             item {
                 SettingsHeader("ABOUT & PROJECTS", theme)
