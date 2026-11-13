@@ -1080,7 +1080,7 @@ private fun SetupBootScreen(
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = onStartDownloads,
-                enabled = !downloadStarted || (!brainVerified || !studioVerified),
+                enabled = !downloadStarted || (!brainReady || !studioReady),
                 colors = ButtonDefaults.buttonColors(containerColor = blue, contentColor = Color(0xFF061426))
             ) {
                 Text(if (downloadStarted) "Resume / retry downloads" else "Start downloads · about 9.5 GB", fontWeight = FontWeight.Bold)
