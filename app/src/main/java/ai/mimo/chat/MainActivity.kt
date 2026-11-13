@@ -350,72 +350,80 @@ private fun MimoApp(prefs: android.content.SharedPreferences) {
         onDispose { localEngine.close() }
     }
 
-    LaunchedEffect(downloadStarted, downloadAttempt) {
+    // Brain downloads run in a foreground service so Android can keep them alive
+    // when the user changes screens or backgrounds MIMO.
+    LaunchedEffect(downloadStarted, downloadAttempt, brainVerified) {
+        if (downloadStarted && !brainVerified) {
+            val intent = Intent(context, MimoDownloadService::class.java)
+                .setAction(MimoDownloadService.ACTION_START)
+                .putExtra(MimoDownloadService.EXTRA_WIFI_ONLY, wifiOnly)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
+    }
+
+    // Mirror the service's real transfer counters into the setup and chat UI.
+    LaunchedEffect(downloadStarted) {
         if (downloadStarted) {
+            val state = context.getSharedPreferences(MimoDownloadService.STATE_PREFS, Context.MODE_PRIVATE)
+            while (!brainVerified) {
+                brainVerified = installer.isVerified(ModelInstaller.Model.BRAIN)
+                brainDownloadedBytes = state.getLong("brain_downloaded", 0L)
+                brainTotalBytes = state.getLong("brain_total", -1L)
+                brainProgress = if (brainTotalBytes > 0L) {
+                    (brainDownloadedBytes.toFloat() / brainTotalBytes.toFloat()).coerceIn(0f, 1f)
+                } else 0f
+                installerStatus = state.getString("status", installerStatus) ?: installerStatus
+                if (brainVerified) {
+                    brainProgress = 1f
+                    break
+                }
+                if (installerStatus.contains("failed", ignoreCase = true) ||
+                    installerStatus.contains("service error", ignoreCase = true) ||
+                    installerStatus.contains("required before", ignoreCase = true)
+                ) break
+                kotlinx.coroutines.delay(900)
+            }
+        }
+    }
+
+    // Keep the approved Studio step after Brain verification; Brain stays installed
+    // and usable if the larger image-model transfer is interrupted.
+    LaunchedEffect(downloadStarted, brainVerified, downloadAttempt) {
+        if (downloadStarted && brainVerified && !studioVerified) {
             try {
-                if (!installer.hasRequiredSpace()) {
-                    installerStatus = "At least 3 GB of free internal app storage is required before starting MIMO Brain."
-                    return@LaunchedEffect
-                }
-                if (!brainVerified) {
-                    installerStatus = "Downloading MIMO Brain…"
-                    brainVerified = installer.downloadAndVerify(ModelInstaller.Model.BRAIN, wifiOnly) { transfer ->
-                        if (transfer != null) {
-                            brainDownloadedBytes = transfer.downloadedBytes
-                            brainTotalBytes = transfer.totalBytes
-                            if (transfer.totalBytes > 0L) {
-                                brainProgress = transfer.progress
-                                installerStatus = "MIMO Brain · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
-                            } else {
-                                installerStatus = when (transfer.status) {
-                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
-                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Brain · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
-                                    android.app.DownloadManager.STATUS_RUNNING -> "MIMO Brain · Connected; preparing download…"
-                                    else -> "MIMO Brain · Checking download…"
-                                }
+                installerStatus = "MIMO Brain verified. Downloading MIMO Studio…"
+                studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
+                    if (transfer != null) {
+                        studioDownloadedBytes = transfer.downloadedBytes
+                        studioTotalBytes = transfer.totalBytes
+                        if (transfer.totalBytes > 0L) {
+                            studioProgress = transfer.progress
+                            installerStatus = "MIMO Studio · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
+                        } else {
+                            installerStatus = when (transfer.status) {
+                                android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
+                                android.app.DownloadManager.STATUS_PAUSED -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
+                                android.app.DownloadManager.STATUS_RUNNING -> "MIMO Studio · Connected; preparing download…"
+                                else -> "MIMO Studio · Checking download…"
                             }
                         }
                     }
-                    if (!brainVerified) {
-                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.BRAIN))
-                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
-                            "MIMO Brain download failed: ${installer.describeReason(failed)} (Android code ${failed.reason})."
-                        } else "MIMO Brain download failed. Check the connection and retry."
-                        return@LaunchedEffect
-                    }
                 }
-                brainProgress = 1f
-                if (!studioVerified) {
-                    installerStatus = "MIMO Brain file verified. Downloading MIMO Studio…"
-                    studioVerified = installer.downloadAndVerify(ModelInstaller.Model.STUDIO, wifiOnly) { transfer ->
-                        if (transfer != null) {
-                            studioDownloadedBytes = transfer.downloadedBytes
-                            studioTotalBytes = transfer.totalBytes
-                            if (transfer.totalBytes > 0L) {
-                                studioProgress = transfer.progress
-                                installerStatus = "MIMO Studio · ${String.format(Locale.US, "%.2f", transfer.progress * 100.0)}% · ${formatModelBytes(transfer.downloadedBytes)} / ${formatModelBytes(transfer.totalBytes)}"
-                            } else {
-                                installerStatus = when (transfer.status) {
-                                    android.app.DownloadManager.STATUS_PENDING -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Queued; waiting for Android to start…" })
-                                    android.app.DownloadManager.STATUS_PAUSED -> "MIMO Studio · " + (installer.describeReason(transfer).ifBlank { "Paused; waiting to resume…" })
-                                    android.app.DownloadManager.STATUS_RUNNING -> "MIMO Studio · Connected; preparing download…"
-                                    else -> "MIMO Studio · Checking download…"
-                                }
-                            }
-                        }
-                    }
-                    if (!studioVerified) {
-                        val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.STUDIO))
-                        installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
-                            "MIMO Studio download failed: ${installer.describeReason(failed)} (Android code ${failed.reason}). Brain remains verified."
-                        } else "MIMO Studio download failed. MIMO Brain remains verified; retry to continue."
-                        return@LaunchedEffect
-                    }
+                if (studioVerified) {
+                    studioProgress = 1f
+                    installerStatus = "MIMO Brain and MIMO Studio are downloaded and SHA-256 verified."
+                } else {
+                    val failed = installer.query(installer.savedDownloadId(ModelInstaller.Model.STUDIO))
+                    installerStatus = if (failed?.status == android.app.DownloadManager.STATUS_FAILED) {
+                        "MIMO Studio download failed: ${installer.describeReason(failed)} (Android code ${failed.reason}). Brain remains verified."
+                    } else "MIMO Studio download failed. MIMO Brain remains safely installed; retry to continue."
                 }
-                studioProgress = 1f
-                installerStatus = "Both model files passed SHA-256 verification. AI runtime integration is the next step."
             } catch (error: Exception) {
-                installerStatus = "Download setup error: ${error.message ?: "unknown error"}"
+                installerStatus = "MIMO Studio setup error: ${error.message ?: error.javaClass.simpleName}. MIMO Brain remains installed."
             }
         }
     }
