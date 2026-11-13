@@ -1334,18 +1334,18 @@ private fun SetupBootScreen(
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Text("FIRST SETUP · ABOUT 10 GB TOTAL", color = Color(0xFF7895B7), fontSize = 9.sp, letterSpacing = 1.3.sp)
+            Text("MIMO BRAIN SETUP · ABOUT 2.5 GB", color = Color(0xFF7895B7), fontSize = 9.sp, letterSpacing = 1.3.sp)
             Spacer(Modifier.height(8.dp))
             Text(statusMessage, color = Color(0xFFB9CDE4), fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 15.sp)
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { downloadConsentAccepted = false; showDownloadConsent = true },
-                enabled = !downloadStarted || (!brainReady || !studioReady),
+                enabled = !brainReady,
                 colors = ButtonDefaults.buttonColors(containerColor = blue, contentColor = Color(0xFF061426))
             ) {
-                Text(if (downloadStarted) "Resume / retry downloads" else "Review & download · about 9.5 GB", fontWeight = FontWeight.Bold)
+                Text(if (downloadStarted) "Resume MIMO Brain download" else "Approve & download MIMO Brain · 2.5 GB", fontWeight = FontWeight.Bold)
             }
-            Text("Downloads run inside MIMO into private internal app storage, resume partial transfers when you retry, and are SHA-256 verified before being marked complete. This installs model files only; AI engines are a separate integration step.",
+            Text("MIMO downloads Brain inside the app to private internal storage, resumes interrupted transfers, and verifies the file with SHA-256. Studio is optional.",
                 color = Color(0xFF7895B7), fontSize = 9.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 7.dp))
             OutlinedButton(onClick = onContinuePreview, border = androidx.compose.foundation.BorderStroke(1.dp, blue.copy(alpha = 0.45f))) {
@@ -1358,10 +1358,10 @@ private fun SetupBootScreen(
                 title = { Text("Download MIMO models?") },
                 text = {
                     Column {
-                        Text("The first setup downloads about 9.5 GB in total:", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Download MIMO Brain · approximately 2.5 GB:", color = Color.White, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(12.dp))
                         Text("• MIMO Brain · Qwen3 4B Q4_K_M · about 2.5 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
-                        Text("• MIMO Studio · SDXL 1.0 · about 6.94 GB", color = Color(0xFFB9CDE4), fontSize = 12.sp)
+                        
                         Spacer(Modifier.height(12.dp))
                         Text("Files are downloaded one after another and checked with SHA-256 before being marked verified. Keep at least 3 GB free for Brain; MIMO Studio checks its larger storage requirement before downloading.", color = Color(0xFFB9CDE4), fontSize = 12.sp, lineHeight = 18.sp)
                         Spacer(Modifier.height(6.dp))
@@ -1369,7 +1369,7 @@ private fun SetupBootScreen(
                         Spacer(Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = downloadConsentAccepted, onCheckedChange = { downloadConsentAccepted = it })
-                            Text("I approve downloading these large model files to this device.", color = Color.White, fontSize = 12.sp)
+                            Text("I approve downloading MIMO Brain (about 2.5 GB) into MIMO private app storage.", color = Color.White, fontSize = 12.sp)
                         }
                     }
                 },
